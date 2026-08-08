@@ -1,0 +1,30 @@
+{
+  "name": "dealersim",
+  "private": true,
+  "version": "3.5.4",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "verify:engine": "vitest run scripts/engine-check.test.ts --reporter=verbose",
+    "calibrate": "vitest run scripts/calibration-lab.test.ts --reporter=verbose"
+  },
+  "dependencies": {
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "@vitejs/plugin-react": "6.0.5",
+    "typescript": "7.0.2",
+    "vite": "8.2.0",
+    "vitest": "4.1.10"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  }
+}
