@@ -1,4 +1,5 @@
 import { SeededRandom } from './random'
+import { commissionForNotional } from './buy-side-market'
 import type {
   FundAssetConfig,
   FundAssetId,
@@ -36,13 +37,13 @@ const FACTORS: FundFactor[] = ['market', 'growth', 'value', 'quality', 'rates', 
 const SINGLE_NAMES: FundAssetId[] = ['apex-fund', 'mega-fund', 'nova-fund', 'heli-fund', 'luma-fund', 'orbx-fund']
 
 export const FUND_ASSETS: readonly FundAssetConfig[] = [
-  { id: 'apex-fund', symbol: 'APEX', displayName: 'Apex Dynamics', sector: 'Industrials', initialPrice: 250, priceDecimals: 2, annualVolatility: .24, transactionCostBps: 1.8, maxAbsWeight: .22, beta: 1.05, borrowRatePct: 1.2, maxShortWeight: .16, hardToBorrow: false, description: 'Liquid industrial large-cap with balanced cyclicality and company catalysts.', factorLoadings: { market: 1.00, growth: .42, value: .18, quality: .12, rates: -.14, momentum: .10 }, eventSensitivity: .95 },
-  { id: 'mega-fund', symbol: 'MEGA', displayName: 'Mega Systems', sector: 'Technology', initialPrice: 418.24, priceDecimals: 2, annualVolatility: .27, transactionCostBps: 1.2, maxAbsWeight: .25, beta: 1.18, borrowRatePct: .6, maxShortWeight: .20, hardToBorrow: false, description: 'Mega-cap technology compounder with deep liquidity and strong growth/quality exposure.', factorLoadings: { market: 1.05, growth: .72, value: -.38, quality: .54, rates: -.36, momentum: .28 }, eventSensitivity: .85 },
-  { id: 'nova-fund', symbol: 'NOVA', displayName: 'Nova Digital', sector: 'Technology', initialPrice: 96.71, priceDecimals: 2, annualVolatility: .48, transactionCostBps: 3.0, maxAbsWeight: .18, beta: 1.55, borrowRatePct: 4.8, maxShortWeight: .12, hardToBorrow: true, description: 'High-beta growth stock with thin liquidity, estimate sensitivity and crowding risk.', factorLoadings: { market: 1.20, growth: 1.02, value: -.62, quality: -.18, rates: -.55, momentum: .62 }, eventSensitivity: 1.35 },
-  { id: 'heli-fund', symbol: 'HELI', displayName: 'Heli Health', sector: 'Healthcare', initialPrice: 143.08, priceDecimals: 2, annualVolatility: .19, transactionCostBps: 1.6, maxAbsWeight: .20, beta: .63, borrowRatePct: .8, maxShortWeight: .15, hardToBorrow: false, description: 'Defensive healthcare large-cap with quality exposure and episodic regulatory catalysts.', factorLoadings: { market: .62, growth: -.05, value: .22, quality: .58, rates: -.08, momentum: .02 }, eventSensitivity: .80 },
-  { id: 'luma-fund', symbol: 'LUMA', displayName: 'Luma Industries', sector: 'Industrials', initialPrice: 184.32, priceDecimals: 2, annualVolatility: .36, transactionCostBps: 4.2, maxAbsWeight: .18, beta: 1.14, borrowRatePct: 3.2, maxShortWeight: .10, hardToBorrow: true, description: 'Less-liquid mid-cap where execution, valuation and estimate revisions matter materially.', factorLoadings: { market: .92, growth: .48, value: .58, quality: .04, rates: -.10, momentum: .16 }, eventSensitivity: 1.20 },
-  { id: 'orbx-fund', symbol: 'ORBX', displayName: 'Orbex Bio', sector: 'Biotech', initialPrice: 62.48, priceDecimals: 2, annualVolatility: .72, transactionCostBps: 7.0, maxAbsWeight: .18, beta: 1.32, borrowRatePct: 13.5, maxShortWeight: .06, hardToBorrow: true, description: 'Event-driven biotech with binary catalysts, expensive borrow and squeeze risk.', factorLoadings: { market: .70, growth: .32, value: -.18, quality: -.35, rates: -.08, momentum: .52 }, eventSensitivity: 2.20 },
-  { id: 'es-fund', symbol: 'ES', displayName: 'S&P 500 Hedge', sector: 'Index', initialPrice: 5400, priceDecimals: 2, annualVolatility: .17, transactionCostBps: .55, maxAbsWeight: .60, beta: 1.00, borrowRatePct: 0, maxShortWeight: .60, hardToBorrow: false, description: 'Liquid index future used to add or remove market beta without changing single-name positions.', factorLoadings: { market: 1.00, growth: .32, value: .02, quality: .04, rates: -.30, momentum: .12 }, eventSensitivity: .45 },
+  { id: 'apex-fund', symbol: 'APEX', displayName: 'Apex Dynamics', sector: 'Industrials', initialPrice: 250, priceDecimals: 2, annualVolatility: .24, transactionCostBps: 1.8, unitLabel: 'share', unitPlural: 'shares', contractMultiplier: 1, commissionPerUnit: .005, minimumCommission: 5, quantityStep: 1, maxAbsWeight: .22, beta: 1.05, borrowRatePct: 1.2, maxShortWeight: .16, hardToBorrow: false, description: 'Liquid industrial large-cap with balanced cyclicality and company catalysts.', factorLoadings: { market: 1.00, growth: .42, value: .18, quality: .12, rates: -.14, momentum: .10 }, eventSensitivity: .95 },
+  { id: 'mega-fund', symbol: 'MEGA', displayName: 'Mega Systems', sector: 'Technology', initialPrice: 418.24, priceDecimals: 2, annualVolatility: .27, transactionCostBps: 1.2, unitLabel: 'share', unitPlural: 'shares', contractMultiplier: 1, commissionPerUnit: .005, minimumCommission: 5, quantityStep: 1, maxAbsWeight: .25, beta: 1.18, borrowRatePct: .6, maxShortWeight: .20, hardToBorrow: false, description: 'Mega-cap technology compounder with deep liquidity and strong growth/quality exposure.', factorLoadings: { market: 1.05, growth: .72, value: -.38, quality: .54, rates: -.36, momentum: .28 }, eventSensitivity: .85 },
+  { id: 'nova-fund', symbol: 'NOVA', displayName: 'Nova Digital', sector: 'Technology', initialPrice: 96.71, priceDecimals: 2, annualVolatility: .48, transactionCostBps: 3.0, unitLabel: 'share', unitPlural: 'shares', contractMultiplier: 1, commissionPerUnit: .006, minimumCommission: 5, quantityStep: 1, maxAbsWeight: .18, beta: 1.55, borrowRatePct: 4.8, maxShortWeight: .12, hardToBorrow: true, description: 'High-beta growth stock with thin liquidity, estimate sensitivity and crowding risk.', factorLoadings: { market: 1.20, growth: 1.02, value: -.62, quality: -.18, rates: -.55, momentum: .62 }, eventSensitivity: 1.35 },
+  { id: 'heli-fund', symbol: 'HELI', displayName: 'Heli Health', sector: 'Healthcare', initialPrice: 143.08, priceDecimals: 2, annualVolatility: .19, transactionCostBps: 1.6, unitLabel: 'share', unitPlural: 'shares', contractMultiplier: 1, commissionPerUnit: .005, minimumCommission: 5, quantityStep: 1, maxAbsWeight: .20, beta: .63, borrowRatePct: .8, maxShortWeight: .15, hardToBorrow: false, description: 'Defensive healthcare large-cap with quality exposure and episodic regulatory catalysts.', factorLoadings: { market: .62, growth: -.05, value: .22, quality: .58, rates: -.08, momentum: .02 }, eventSensitivity: .80 },
+  { id: 'luma-fund', symbol: 'LUMA', displayName: 'Luma Industries', sector: 'Industrials', initialPrice: 184.32, priceDecimals: 2, annualVolatility: .36, transactionCostBps: 4.2, unitLabel: 'share', unitPlural: 'shares', contractMultiplier: 1, commissionPerUnit: .0075, minimumCommission: 7.5, quantityStep: 1, maxAbsWeight: .18, beta: 1.14, borrowRatePct: 3.2, maxShortWeight: .10, hardToBorrow: true, description: 'Less-liquid mid-cap where execution, valuation and estimate revisions matter materially.', factorLoadings: { market: .92, growth: .48, value: .58, quality: .04, rates: -.10, momentum: .16 }, eventSensitivity: 1.20 },
+  { id: 'orbx-fund', symbol: 'ORBX', displayName: 'Orbex Bio', sector: 'Biotech', initialPrice: 62.48, priceDecimals: 2, annualVolatility: .72, transactionCostBps: 7.0, unitLabel: 'share', unitPlural: 'shares', contractMultiplier: 1, commissionPerUnit: .01, minimumCommission: 10, quantityStep: 1, maxAbsWeight: .18, beta: 1.32, borrowRatePct: 13.5, maxShortWeight: .06, hardToBorrow: true, description: 'Event-driven biotech with binary catalysts, expensive borrow and squeeze risk.', factorLoadings: { market: .70, growth: .32, value: -.18, quality: -.35, rates: -.08, momentum: .52 }, eventSensitivity: 2.20 },
+  { id: 'es-fund', symbol: 'ES', displayName: 'S&P 500 Hedge', sector: 'Index', initialPrice: 5400, priceDecimals: 2, annualVolatility: .17, transactionCostBps: .55, unitLabel: 'contract', unitPlural: 'contracts', contractMultiplier: 50, commissionPerUnit: 2.5, minimumCommission: 2.5, quantityStep: 1, maxAbsWeight: .60, beta: 1.00, borrowRatePct: 0, maxShortWeight: .60, hardToBorrow: false, description: 'Liquid index future used to add or remove market beta without changing single-name positions.', factorLoadings: { market: 1.00, growth: .32, value: .02, quality: .04, rates: -.30, momentum: .12 }, eventSensitivity: .45 },
 ] as const
 
 export const FUND_ASSET_MAP = Object.fromEntries(FUND_ASSETS.map((asset) => [asset.id, asset])) as Record<FundAssetId, FundAssetConfig>
@@ -384,6 +385,7 @@ export class EquityFundEngine {
   private readonly resolvedScenario: Exclude<FundScenario, 'random'>
   private state: FundSessionSnapshot
   private lastHeadlineAt = 0
+  private executionMemory: Partial<Record<FundAssetId, { side: 'buy' | 'sell'; at: number; pressure: number }>> = {}
 
   constructor(options: FundSessionOptions) {
     this.rng = new SeededRandom(options.seed)
@@ -405,7 +407,7 @@ export class EquityFundEngine {
       cash: starting.cash, peakNav: options.initialNav, maxDrawdown: 0, prices, previousPrices: { ...prices }, positions,
       headlines: [{ id: 'open', timestamp: 0, severity: 'info', title: `${options.mandate === 'long-short' ? 'Long/short fund' : 'Long-only mandate'} opened`, detail: `Markets are live with the ${portfolioLabel} starting portfolio. Initial holdings are inherited at the opening mark with no simulated transaction cost.` }],
       calendar, trades: [], theses: [], locates: initialLocates, dealerRfqs: [], dealerTrades: 0, dealerSavings: 0, dealerRelationships: buildDealerRelationships(options.dealerMemory), executionQuality: emptyExecutionQuality(), workingOrders: [], borrowCosts: 0,
-      transactionCosts: 0, turnover: 0, peakGrossExposure: starting.gross, peakConcentration: Math.max(...Object.values(starting.weights).map(Math.abs)), peakRiskUtilisation: 0, peakBetaExposure: 0,
+      transactionCosts: 0, commissions: 0, turnover: 0, peakGrossExposure: starting.gross, peakConcentration: Math.max(...Object.values(starting.weights).map(Math.abs)), peakRiskUtilisation: 0, peakBetaExposure: 0,
       risk: { grossExposure: starting.gross, netExposure: starting.net, cashWeight: starting.cash / options.initialNav, concentration: 0, betaExposure: 0, sectorExposure: emptySector(), factorExposure: emptyFactors(), riskUtilisation: 0 },
       attribution: initialAttribution(), factorPulse: emptyFactors(), marketContext, marketPhase: openingPhase.phase, liquidityCostMultiplier: openingPhase.liquidityCostMultiplier, volatilityMultiplier: openingPhase.volatilityMultiplier, stressTests: [], salesColour: [], riskManagerMessages: [], research, auditTrail: [{ id: 'audit-open', timestamp: 0, type: 'risk', title: 'Mandate opened', detail: `Inherited ${portfolioLabel} portfolio: gross ${(starting.gross * 100).toFixed(0)}%, net ${(starting.net * 100).toFixed(0)}%, cash ${(starting.cash / options.initialNav * 100).toFixed(0)}%. Starting holdings do not count as turnover or transaction cost.`, severity: 'info' }], history: [{ elapsedSeconds: 0, nav: options.initialNav, benchmarkNav: options.initialNav, drawdown: 0, prices: { ...prices } }],
     }
@@ -418,6 +420,32 @@ export class EquityFundEngine {
   }
 
   snapshot(): FundSessionSnapshot { return structuredClone(this.state) }
+
+  private executionBps(asset: FundAssetConfig, requestedNotional: number, side: 'buy' | 'sell', venue: FundTrade['executionVenue']): number {
+    const sizePct = requestedNotional / Math.max(1, this.state.nav)
+    const venueMultiplier = venue === 'auction' ? .46 : venue === 'worked-order' ? .48 : venue === 'dealer-rfq' ? .68 : 1
+    const sizeCurve = 1 + .42 * Math.sqrt(sizePct / .02) + 1.65 * Math.pow(sizePct / .08, 1.55)
+    const memory = this.executionMemory[asset.id]
+    const ageSeconds = memory ? Math.max(0, this.state.elapsedSeconds - memory.at) : Infinity
+    const recentSameSide = Boolean(memory && memory.side === side && ageSeconds <= 30)
+    const effectivePressure = recentSameSide ? (memory?.pressure ?? 0) * Math.exp(-ageSeconds / 13) : 0
+    const leakageMultiplier = recentSameSide ? 1 + effectivePressure * (venue === 'direct-market' ? 1.55 : venue === 'worked-order' ? .16 : .09) : 1
+    return asset.transactionCostBps * 1.18 * venueMultiplier * this.state.liquidityCostMultiplier * sizeCurve * leakageMultiplier
+  }
+
+  private registerExecution(assetId: FundAssetId, side: 'buy' | 'sell', sizePct: number, venue: FundTrade['executionVenue']): void {
+    const prior = this.executionMemory[assetId]
+    const ageSeconds = prior ? Math.max(0, this.state.elapsedSeconds - prior.at) : Infinity
+    const recentSameSide = Boolean(prior && prior.side === side && ageSeconds <= 30)
+    const venuePressure = venue === 'direct-market' ? 1 : venue === 'worked-order' ? .32 : venue === 'auction' ? .20 : .12
+    const decayedPressure = prior ? prior.pressure * Math.exp(-ageSeconds / 14) : 0
+    const basePressure = recentSameSide ? decayedPressure : decayedPressure * .18
+    this.executionMemory[assetId] = {
+      side,
+      at: this.state.elapsedSeconds,
+      pressure: clamp(basePressure + venuePressure * (.18 + Math.pow(Math.max(.002, sizePct) / .025, .72) * .28), 0, 3),
+    }
+  }
 
   private audit(entry: Omit<FundDecisionAuditEntry, 'id' | 'timestamp'> & { timestamp?: number }): void {
     this.state.auditTrail.unshift({ id: `audit-${this.state.elapsedSeconds.toFixed(2)}-${this.rng.int(1000, 9999)}`, timestamp: entry.timestamp ?? this.state.elapsedSeconds, ...entry })
@@ -623,10 +651,11 @@ export class EquityFundEngine {
     const mid = this.state.prices[asset.id]
     const requestedNotional = Math.abs(deltaNotional)
     const requestedUnits = requestedNotional / mid
-    const sizePct = requestedNotional / Math.max(1, this.state.nav)
-    const directBps = asset.transactionCostBps * this.state.liquidityCostMultiplier * (1 + Math.pow(sizePct / .05, .7) * .9)
+    const directBps = this.executionBps(asset, requestedNotional, side, 'direct-market')
     const directBenchmarkPrice = mid * (1 + (side === 'buy' ? 1 : -1) * directBps / 10000)
-    const directCost = Math.abs(directBenchmarkPrice - mid) * requestedUnits
+    const directMarketCost = Math.abs(directBenchmarkPrice - mid) * requestedUnits
+    const directCommission = commissionForNotional(asset, directBenchmarkPrice, requestedNotional, 'direct-market')
+    const directCost = directMarketCost + directCommission
     const selected = [...FUND_DEALERS].sort(() => this.rng.next() - .5).slice(0, clamp(Math.floor(dealerCount), 1, FUND_DEALERS.length))
     const quotes: FundDealerQuote[] = selected.map((dealer) => {
       const relationship = this.state.dealerRelationships[dealer.id]
@@ -667,7 +696,9 @@ export class EquityFundEngine {
     if (!result.accepted) return result
     const benchmarkPrice = rfq.directBenchmarkPrice
     const units = fillNotional / Math.max(.01, this.state.prices[asset.id])
-    const savings = rfq.side === 'buy' ? (benchmarkPrice - executionPrice) * units : (executionPrice - benchmarkPrice) * units
+    const priceSaving = rfq.side === 'buy' ? (benchmarkPrice - executionPrice) * units : (executionPrice - benchmarkPrice) * units
+    const directCommission = commissionForNotional(asset, benchmarkPrice, fillNotional, 'direct-market')
+    const savings = priceSaving + directCommission
     rfq.filledNotional = (rfq.filledNotional ?? 0) + fillNotional; rfq.selectedQuoteId = quoteId; rfq.dealerName = quote.dealerName; rfq.savingsVsDirect = (rfq.savingsVsDirect ?? 0) + savings
     this.state.dealerTrades += 1; this.state.dealerSavings += savings
     const relationship = this.state.dealerRelationships[quote.dealerId]
@@ -759,38 +790,52 @@ export class EquityFundEngine {
     const deltaNotional = targetValue - currentValue
     if (Math.abs(deltaNotional) < 10_000) return { accepted: false, reason: 'Target is too close to the current position.' }
     const side = deltaNotional > 0 ? 1 : -1
+    const sideLabel: 'buy' | 'sell' = side > 0 ? 'buy' : 'sell'
     const requested = Math.abs(deltaNotional)
     const mid = this.state.prices[asset.id]
     const sizePct = requested / Math.max(1, this.state.nav)
-    const venueMultiplier = venue === 'auction' ? .48 : venue === 'worked-order' ? .55 : venue === 'dealer-rfq' ? .72 : 1
-    const bps = asset.transactionCostBps * venueMultiplier * this.state.liquidityCostMultiplier * (1 + Math.pow(sizePct / .05, .65) * .75)
+    const bps = this.executionBps(asset, requested, sideLabel, venue)
+    const directBenchmarkBps = this.executionBps(asset, requested, sideLabel, 'direct-market')
     const executionPrice = forcedPrice ?? mid * (1 + side * bps / 10000)
     const unitsDelta = deltaNotional / executionPrice
     const absoluteUnits = Math.abs(unitsDelta)
-    const actualCost = Math.abs(executionPrice - mid) * absoluteUnits
-    const benchmarkPrice = mid * (1 + side * asset.transactionCostBps * this.state.liquidityCostMultiplier * (1 + Math.pow(sizePct / .05, .65) * .75) / 10000)
+    const benchmarkPrice = mid * (1 + side * directBenchmarkBps / 10000)
     const arrivalPrice = arrivalPriceOverride ?? mid
-    const implementationShortfall = side * (executionPrice - arrivalPrice) * absoluteUnits
+    const marketCost = Math.abs(executionPrice - mid) * absoluteUnits
+    const commission = commissionForNotional(asset, executionPrice, requested, venue)
+    const totalCost = marketCost + commission
+    const implementationShortfall = side * (executionPrice - arrivalPrice) * absoluteUnits + commission
     const timingCost = side * (mid - arrivalPrice) * absoluteUnits
     const marketImpactCost = side * (executionPrice - mid) * absoluteUnits
     const implementationShortfallBps = implementationShortfall / Math.max(1, requested) * 10000
     const timingCostBps = timingCost / Math.max(1, requested) * 10000
     const marketImpactBps = marketImpactCost / Math.max(1, requested) * 10000
-    this.state.cash -= unitsDelta * executionPrice
+    this.state.cash -= unitsDelta * executionPrice + commission
     this.state.positions[asset.id].units += unitsDelta
     this.state.positions[asset.id].lastTradePrice = executionPrice
-    this.state.transactionCosts += actualCost
+    this.state.transactionCosts += totalCost
+    this.state.commissions += commission
     this.state.turnover += requested / Math.max(1, this.state.options.initialNav)
-    this.state.attribution.byFactor['transaction-costs'] -= actualCost
-    this.state.attribution.byAsset[asset.id] -= actualCost
+    this.state.attribution.byFactor['transaction-costs'] -= totalCost
+    this.state.attribution.byAsset[asset.id] -= totalCost
     let thesisId: string | undefined
     if (intent.recordThesis && intent.tag && intent.horizon && intent.conviction) {
       const thesis: FundThesis = { id: `thesis-${this.state.elapsedSeconds}-${this.rng.int(100, 999)}`, timestamp: this.state.elapsedSeconds, assetId: asset.id, previousWeight: currentWeight, targetWeight: intent.targetWeight, tag: intent.tag, horizon: intent.horizon, conviction: intent.conviction, invalidation: intent.invalidation ?? '', entryPrice: executionPrice }
       this.state.theses.push(thesis); thesisId = thesis.id
     }
-    const trade: FundTrade = { id: `trade-${this.state.elapsedSeconds}-${this.rng.int(1000, 9999)}`, timestamp: this.state.elapsedSeconds, assetId: asset.id, price: executionPrice, previousWeight: currentWeight, targetWeight: intent.targetWeight, tradedNotional: requested, transactionCost: actualCost, executionVenue: venue, benchmarkPrice, executionSlippage: side * (executionPrice - mid), arrivalPrice, implementationShortfall, implementationShortfallBps, timingCost, timingCostBps, marketImpactCost, marketImpactBps, dealerName, thesisId }
+    const trade: FundTrade = { id: `trade-${this.state.elapsedSeconds}-${this.rng.int(1000, 9999)}`, timestamp: this.state.elapsedSeconds, assetId: asset.id, price: executionPrice, previousWeight: currentWeight, targetWeight: intent.targetWeight, tradedNotional: requested, transactionCost: totalCost, commission, marketCost, executionVenue: venue, benchmarkPrice, executionSlippage: side * (executionPrice - mid), arrivalPrice, implementationShortfall, implementationShortfallBps, timingCost, timingCostBps, marketImpactCost, marketImpactBps, dealerName, thesisId }
     this.state.trades.push(trade)
-    this.audit({ type: 'trade', assetId: asset.id, title: `${asset.symbol} ${side > 0 ? 'buy' : 'sell'} executed`, detail: `${(requested / 1_000_000).toFixed(2)}m via ${venue.replace(/-/g, ' ')} at ${executionPrice.toFixed(asset.priceDecimals)}; target ${(intent.targetWeight * 100).toFixed(1)}% NAV; IS ${implementationShortfallBps.toFixed(1)}bp.`, refId: trade.id, severity: implementationShortfallBps > 8 ? 'warning' : 'info' })
+    this.registerExecution(asset.id, sideLabel, sizePct, venue)
+    if (venue === 'direct-market' && forcedPrice === undefined) {
+      const persistentShare = clamp(.12 + sizePct * .85, .12, .28)
+      const impactedPrice = Math.max(.05, mid * (1 + side * bps * persistentShare / 10000))
+      const selfImpactMarkPnl = this.state.positions[asset.id].units * (impactedPrice - mid)
+      this.state.prices[asset.id] = impactedPrice
+      this.state.attribution.byAsset[asset.id] += selfImpactMarkPnl
+      this.state.attribution.byFactor.idiosyncratic += selfImpactMarkPnl
+      this.state.attribution.alphaPnl += selfImpactMarkPnl
+    }
+    this.audit({ type: 'trade', assetId: asset.id, title: `${asset.symbol} ${side > 0 ? 'buy' : 'sell'} executed`, detail: `${(requested / 1_000_000).toFixed(2)}m via ${venue.replace(/-/g, ' ')} at ${executionPrice.toFixed(asset.priceDecimals)}; commission $${commission.toFixed(0)}; target ${(intent.targetWeight * 100).toFixed(1)}% NAV; IS ${implementationShortfallBps.toFixed(1)}bp.`, refId: trade.id, severity: implementationShortfallBps > 8 ? 'warning' : 'info' })
     this.state.executionQuality = recomputeExecutionQuality(this.state)
     this.state.nav = computeNav(this.state); this.state.risk = computeFundRisk(this.state)
     return { accepted: true, reason: `${asset.symbol} target moved to ${(intent.targetWeight * 100).toFixed(1)}% NAV.` }

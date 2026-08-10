@@ -183,12 +183,16 @@ export function estimateBlockExecution(
   // A block larger than the visible book should therefore create more impact than
   // a block equal to displayed depth, while the cap avoids runaway synthetic moves.
   const participation = requestedSizeM / Math.max(instrument.minimumSizeM, displayedDepthM)
-  const effectiveParticipation = Math.min(4, Math.max(0, participation))
-  const liquidityPenalty = 1 / Math.max(0.18, market.liquidity)
-  const volatilityPenalty = 1 + Math.min(2, market.volatility * 0.22)
+  const effectiveParticipation = Math.min(5, Math.max(0, participation))
+  const liquidityPenalty = 1 / Math.max(0.16, market.liquidity)
+  const volatilityPenalty = 1 + Math.min(2.4, market.volatility * 0.26)
+  // Training calibration deliberately makes aggressive block impact convex.
+  // Small clips remain close to top-of-book economics, while orders that consume
+  // a meaningful share of displayed depth become disproportionately expensive.
+  const participationCurve = Math.sqrt(effectiveParticipation) * 0.95 + Math.pow(effectiveParticipation, 1.45) * 0.58
   const temporaryImpactPips = instrument.marketStructure === 'central-limit-order-book'
-    ? instrument.impactCoefficientPips * Math.sqrt(effectiveParticipation) * liquidityPenalty * volatilityPenalty
-    : instrument.impactCoefficientPips * Math.max(0, participation - 0.35) * liquidityPenalty
+    ? instrument.impactCoefficientPips * participationCurve * liquidityPenalty * volatilityPenalty
+    : instrument.impactCoefficientPips * Math.pow(Math.max(0, participation - 0.22), 1.32) * liquidityPenalty * volatilityPenalty
   const signedImpact = temporaryImpactPips * instrument.pipSize * (side === 'buy' ? 1 : -1)
   const impactAdjustedPrice = execution.averagePrice + signedImpact
   const topOfBookPrice = side === 'buy' ? market.ask : market.bid

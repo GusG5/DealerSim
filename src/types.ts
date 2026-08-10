@@ -36,7 +36,7 @@ export type MarketRegime = 'calm' | 'trending' | 'mean-reverting' | 'volatile' |
 export type DealerMarketPhase = 'opening' | 'morning' | 'midday' | 'event-window' | 'closing'
 export type SessionStatus = 'ready' | 'running' | 'paused' | 'finished'
 export type EventSeverity = 'info' | 'positive' | 'warning' | 'critical'
-export type TradeSource = 'client' | 'market-hedge' | 'worked-hedge' | 'passive-hedge' | 'forced-liquidation'
+export type TradeSource = 'client' | 'market-hedge' | 'interdealer-hedge' | 'worked-hedge' | 'passive-hedge' | 'forced-liquidation'
 
 
 export type MarketProfileLevel = 'Low' | 'Moderate' | 'High' | 'Very high'
@@ -359,6 +359,7 @@ export interface SessionMetrics {
   startEquity: number
   grossClientVolumeM: number
   exchangeHedgeVolumeM: number
+  interdealerHedgeVolumeM: number
   internalisedVolumeM: number
   workedHedgeVolumeM: number
   marketImpactCost: number

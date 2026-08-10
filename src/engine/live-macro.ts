@@ -1,4 +1,5 @@
 import { SeededRandom } from './random'
+import { commissionForNotional } from './buy-side-market'
 import { MACRO_ASSETS, MACRO_ASSET_MAP, MACRO_SCENARIOS } from './macro'
 import type { MacroAssetConfig, MacroAssetId, MacroAttribution, MacroPosition, MacroRiskSnapshot, MacroScore, PortfolioFactor } from './macro-types'
 import type {
@@ -273,6 +274,7 @@ export class LiveMacroEngine {
   private state: LiveMacroSessionSnapshot
   private lastHistoryAt = 0
   private nextHeadlineAt = 0
+  private executionMemory: Partial<Record<MacroAssetId, { side: 'buy' | 'sell'; at: number; pressure: number }>> = {}
 
   constructor(options: LiveMacroSessionOptions) {
     this.rng = new SeededRandom(options.seed)
@@ -308,6 +310,7 @@ export class LiveMacroEngine {
       peakConcentration: Math.max(...Object.values(starting.weights).map(Math.abs)),
       turnover: 0,
       transactionCosts: 0,
+      commissions: 0,
       dealerRfqs: [],
       dealerTrades: 0,
       dealerSavings: 0,
@@ -331,6 +334,21 @@ export class LiveMacroEngine {
 
   snapshot(): LiveMacroSessionSnapshot {
     return structuredClone(this.state)
+  }
+
+
+  private registerExecution(assetId: MacroAssetId, side: 'buy' | 'sell', sizePct: number, venue: LiveMacroTrade['executionVenue']): void {
+    const prior = this.executionMemory[assetId]
+    const ageSeconds = prior ? Math.max(0, this.state.elapsedSeconds - prior.at) : Infinity
+    const recentSameSide = Boolean(prior && prior.side === side && ageSeconds <= 32)
+    const venuePressure = venue === 'direct-market' ? 1 : venue === 'worked-order' ? .30 : .12
+    const decayedPressure = prior ? prior.pressure * Math.exp(-ageSeconds / 14) : 0
+    const basePressure = recentSameSide ? decayedPressure : decayedPressure * .18
+    this.executionMemory[assetId] = {
+      side,
+      at: this.state.elapsedSeconds,
+      pressure: clamp(basePressure + venuePressure * (.16 + Math.pow(Math.max(.002, sizePct) / .025, .72) * .30), 0, 3),
+    }
   }
 
   private pushRiskMessage(severity: LiveMacroRiskManagerMessage['severity'], title: string, detail: string): void {
@@ -403,12 +421,20 @@ export class LiveMacroEngine {
     if (!prepared.accepted) return { accepted: false, reason: prepared.reason, price: this.state.prices[intent.assetId], cost: 0, oneWayBps: 0 }
     const mid = this.state.prices[intent.assetId]
     const deltaWeight = Math.abs(prepared.deltaValue) / Math.max(1, this.state.nav)
-    const sizeMultiplier = 1 + clamp(Math.sqrt(deltaWeight / 0.05) * 0.24, 0, 0.95)
-    const stressMultiplier = this.state.resolvedScenario === 'risk-off' || this.state.resolvedScenario === 'policy-error' ? 1.16 : 1
-    const oneWayBps = prepared.asset.transactionCostBps * sizeMultiplier * stressMultiplier * this.state.liquidityCostMultiplier * costMultiplier
+    const sizeMultiplier = 1 + .38 * Math.sqrt(deltaWeight / .02) + 1.45 * Math.pow(deltaWeight / .09, 1.5)
+    const stressMultiplier = this.state.resolvedScenario === 'risk-off' || this.state.resolvedScenario === 'policy-error' ? 1.22 : 1
+    const memory = this.executionMemory[intent.assetId]
+    const ageSeconds = memory ? Math.max(0, this.state.elapsedSeconds - memory.at) : Infinity
+    const recentSameSide = Boolean(memory && memory.side === prepared.side && ageSeconds <= 32)
+    const effectivePressure = recentSameSide ? (memory?.pressure ?? 0) * Math.exp(-ageSeconds / 13) : 0
+    const aggressionWeight = costMultiplier >= .9 ? 1 : .32
+    const leakageMultiplier = recentSameSide ? 1 + effectivePressure * 1.45 * aggressionWeight : 1
+    const oneWayBps = prepared.asset.transactionCostBps * 1.16 * sizeMultiplier * stressMultiplier * this.state.liquidityCostMultiplier * costMultiplier * leakageMultiplier
     const sign = prepared.side === 'buy' ? 1 : -1
     const price = mid * (1 + sign * oneWayBps / 10_000)
-    return { accepted: true, reason: '', price, cost: Math.abs(prepared.deltaUnits) * Math.abs(price - mid), oneWayBps }
+    const marketCost = Math.abs(prepared.deltaUnits) * Math.abs(price - mid)
+    const commission = commissionForNotional(prepared.asset, price, Math.abs(prepared.deltaValue), 'direct-market')
+    return { accepted: true, reason: '', price, cost: marketCost + commission, oneWayBps }
   }
 
   estimateDirect(intent: LiveMacroTradeIntent): { accepted: boolean; reason: string; price: number; cost: number; oneWayBps: number } {
@@ -447,11 +473,18 @@ export class LiveMacroEngine {
   ): { transactionCost: number; tradedNotional: number } {
     const mid = this.state.prices[assetId]
     const tradedNotional = Math.abs(deltaUnits * mid)
-    const transactionCost = Math.abs(deltaUnits) * Math.abs(executionPrice - mid)
-    this.state.cash -= deltaUnits * executionPrice
+    const marketCost = Math.abs(deltaUnits) * Math.abs(executionPrice - mid)
+    const asset = MACRO_ASSET_MAP[assetId]
+    const commission = commissionForNotional(asset, executionPrice, tradedNotional, venue)
+    const transactionCost = marketCost + commission
+    const side: 'buy' | 'sell' = deltaUnits >= 0 ? 'buy' : 'sell'
+    const sizePct = tradedNotional / Math.max(1, this.state.nav)
+    const effectiveBps = mid > 0 ? Math.abs(executionPrice - mid) / mid * 10_000 : 0
+    this.state.cash -= deltaUnits * executionPrice + commission
     this.state.positions[assetId].units += deltaUnits
     this.state.positions[assetId].lastTradePrice = executionPrice
     this.state.transactionCosts += transactionCost
+    this.state.commissions += commission
     this.state.turnover += tradedNotional / this.state.options.initialNav
     this.state.attribution.byFactor['transaction-costs'] -= transactionCost
     const trade: LiveMacroTrade = {
@@ -463,6 +496,8 @@ export class LiveMacroEngine {
       targetWeight,
       tradedNotional,
       transactionCost,
+      commission,
+      marketCost,
       executionVenue: venue,
       benchmarkPrice,
       executionSlippage: executionPrice - mid,
@@ -470,6 +505,16 @@ export class LiveMacroEngine {
       thesisId,
     }
     this.state.trades.unshift(trade)
+    this.registerExecution(assetId, side, sizePct, venue)
+    if (venue === 'direct-market') {
+      const sign = side === 'buy' ? 1 : -1
+      const persistentShare = clamp(.10 + sizePct * .85, .10, .25)
+      const impactedPrice = Math.max(.01, mid * (1 + sign * effectiveBps * persistentShare / 10_000))
+      const selfImpactMarkPnl = this.state.positions[assetId].units * (impactedPrice - mid)
+      this.state.prices[assetId] = impactedPrice
+      this.state.attribution.byAsset[assetId] += selfImpactMarkPnl
+      this.state.attribution.byFactor.idiosyncratic += selfImpactMarkPnl
+    }
     this.state.nav = computeNav(this.state)
     this.state.risk = computeRisk(this.state)
     this.updatePeaks()

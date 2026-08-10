@@ -21,6 +21,7 @@ interface MultiTradingTerminalProps {
   onSubmitQuote: (instrumentId: string, bid?: number, ask?: number) => void
   onPassRfq: (instrumentId: string) => void
   onMarketHedge: (instrumentId: string, side: TradeSide, sizeM: number) => void
+  onInterdealerHedge: (instrumentId: string, side: TradeSide, sizeM: number) => void
   onStartWorkingHedge: (
     instrumentId: string,
     side: TradeSide,
@@ -48,6 +49,7 @@ export function MultiTradingTerminal({
   onSubmitQuote,
   onPassRfq,
   onMarketHedge,
+  onInterdealerHedge,
   onStartWorkingHedge,
   onCancelWorkingHedge,
   onPauseWorkingHedge,
@@ -57,21 +59,30 @@ export function MultiTradingTerminal({
   onPassiveOrder,
   onCancelPassive,
 }: MultiTradingTerminalProps) {
-  const [selectedInstrumentId, setSelectedInstrumentId] = useState(snapshot.legs[0].options.instrument.id)
+  // Client attention and exchange execution are intentionally independent.
+  // Incoming RFQs can pull the active client ticket without silently changing
+  // the market the dealer is viewing / hedging on the exchange.
+  const [selectedTicketInstrumentId, setSelectedTicketInstrumentId] = useState(snapshot.legs[0].options.instrument.id)
+  const [selectedExchangeInstrumentId, setSelectedExchangeInstrumentId] = useState(snapshot.legs[0].options.instrument.id)
 
   useEffect(() => {
-    const selected = snapshot.legs.find((leg) => leg.options.instrument.id === selectedInstrumentId)
-    const otherWithRfq = snapshot.legs.find((leg) => leg.activeRfq && leg.options.instrument.id !== selectedInstrumentId)
-    if (!selected?.activeRfq && otherWithRfq?.activeRfq) {
-      setSelectedInstrumentId(otherWithRfq.options.instrument.id)
+    const selectedTicket = snapshot.legs.find((leg) => leg.options.instrument.id === selectedTicketInstrumentId)
+    const otherWithRfq = snapshot.legs.find((leg) => leg.activeRfq && leg.options.instrument.id !== selectedTicketInstrumentId)
+    if (!selectedTicket?.activeRfq && otherWithRfq?.activeRfq) {
+      setSelectedTicketInstrumentId(otherWithRfq.options.instrument.id)
     }
-  }, [selectedInstrumentId, snapshot.legs])
+  }, [selectedTicketInstrumentId, snapshot.legs])
 
-  const selectedLeg = useMemo(
-    () => snapshot.legs.find((leg) => leg.options.instrument.id === selectedInstrumentId) ?? snapshot.legs[0],
-    [selectedInstrumentId, snapshot.legs],
+  const selectedTicketLeg = useMemo(
+    () => snapshot.legs.find((leg) => leg.options.instrument.id === selectedTicketInstrumentId) ?? snapshot.legs[0],
+    [selectedTicketInstrumentId, snapshot.legs],
   )
-  const instrumentId = selectedLeg.options.instrument.id
+  const selectedExchangeLeg = useMemo(
+    () => snapshot.legs.find((leg) => leg.options.instrument.id === selectedExchangeInstrumentId) ?? snapshot.legs[0],
+    [selectedExchangeInstrumentId, snapshot.legs],
+  )
+  const ticketInstrumentId = selectedTicketLeg.options.instrument.id
+  const exchangeInstrumentId = selectedExchangeLeg.options.instrument.id
 
   const onFullscreen = () => {
     if (!document.fullscreenElement) void document.documentElement.requestFullscreen()
@@ -82,9 +93,9 @@ export function MultiTradingTerminal({
     <main className="multi-terminal-shell">
       <MultiTerminalHeader
         snapshot={snapshot}
-        selectedInstrumentId={instrumentId}
+        selectedInstrumentId={exchangeInstrumentId}
         muted={muted}
-        onSelectInstrument={setSelectedInstrumentId}
+        onSelectInstrument={setSelectedExchangeInstrumentId}
         onToggleMute={onToggleMute}
         onPause={onPause}
         onResume={onResume}
@@ -97,44 +108,64 @@ export function MultiTradingTerminal({
       <section className="multi-terminal-upper-grid">
         <div className="terminal-panel"><EventFeed events={snapshot.events} /></div>
         <div className="terminal-panel"><MultiPortfolioPanel snapshot={snapshot} /></div>
-        <div className="terminal-panel"><MultiRfqQueue snapshot={snapshot} selectedInstrumentId={instrumentId} onSelectInstrument={setSelectedInstrumentId} /></div>
+        <div className="terminal-panel"><MultiRfqQueue snapshot={snapshot} selectedInstrumentId={ticketInstrumentId} onSelectInstrument={setSelectedTicketInstrumentId} /></div>
       </section>
 
       <section className="multi-terminal-workspace">
         <div className="terminal-column multi-client-column">
           <div className="multi-selected-market-banner">
             <span>ACTIVE TICKET</span>
-            <strong>{selectedLeg.options.instrument.symbol}</strong>
-            <small>{selectedLeg.options.instrument.displayName}</small>
+            <strong>{selectedTicketLeg.options.instrument.symbol}</strong>
+            <small>{selectedTicketLeg.options.instrument.displayName}</small>
           </div>
           <div className="terminal-panel prominent multi-rfq-panel">
             <RfqTicket
-              key={`rfq-${instrumentId}`}
-              snapshot={selectedLeg}
-              onSubmit={(bid, ask) => onSubmitQuote(instrumentId, bid, ask)}
-              onPass={() => onPassRfq(instrumentId)}
+              key={`rfq-${ticketInstrumentId}`}
+              snapshot={selectedTicketLeg}
+              onSubmit={(bid, ask) => onSubmitQuote(ticketInstrumentId, bid, ask)}
+              onPass={() => onPassRfq(ticketInstrumentId)}
             />
           </div>
         </div>
 
         <div className="terminal-column multi-execution-column">
+          <div className="multi-exchange-selector">
+            <div><span>EXCHANGE / HEDGE MARKET</span><small>Choose explicitly — RFQs do not change this</small></div>
+            <div className="multi-exchange-selector-buttons" style={{ gridTemplateColumns: `repeat(${snapshot.legs.length}, minmax(0, 1fr))` }}>
+              {snapshot.legs.map((leg) => {
+                const instrument = leg.options.instrument
+                return (
+                  <button
+                    type="button"
+                    key={instrument.id}
+                    className={instrument.id === exchangeInstrumentId ? 'selected' : ''}
+                    onClick={() => setSelectedExchangeInstrumentId(instrument.id)}
+                  >
+                    <strong>{instrument.symbol}</strong>
+                    <span>{leg.position.quantityM === 0 ? 'flat' : `${leg.position.quantityM > 0 ? '+' : ''}${leg.position.quantityM.toFixed(0)} ${instrument.sizeSuffix}`}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
           <div className="terminal-panel book-terminal-panel">
-            <OrderBook market={selectedLeg.market} instrument={selectedLeg.options.instrument} activeRfq={selectedLeg.activeRfq} />
+            <OrderBook market={selectedExchangeLeg.market} instrument={selectedExchangeLeg.options.instrument} activeRfq={selectedExchangeLeg.activeRfq} />
           </div>
           <div className="terminal-panel grow hedge-terminal-panel">
             <HedgePanel
-              key={`hedge-${instrumentId}`}
-              snapshot={selectedLeg}
-              onMarketHedge={(side, sizeM) => onMarketHedge(instrumentId, side, sizeM)}
+              key={`hedge-${exchangeInstrumentId}`}
+              snapshot={selectedExchangeLeg}
+              onMarketHedge={(side, sizeM) => onMarketHedge(exchangeInstrumentId, side, sizeM)}
+              onInterdealerHedge={(side, sizeM) => onInterdealerHedge(exchangeInstrumentId, side, sizeM)}
               onStartWorkingHedge={(side, sizeM, strategy, clipSizeM, intervalSeconds) =>
-                onStartWorkingHedge(instrumentId, side, sizeM, strategy, clipSizeM, intervalSeconds)}
-              onCancelWorkingHedge={(orderId) => onCancelWorkingHedge(instrumentId, orderId)}
-              onPauseWorkingHedge={(orderId) => onPauseWorkingHedge(instrumentId, orderId)}
-              onResumeWorkingHedge={(orderId) => onResumeWorkingHedge(instrumentId, orderId)}
-              onModifyWorkingHedge={(orderId, clipSizeM, intervalSeconds) => onModifyWorkingHedge(instrumentId, orderId, clipSizeM, intervalSeconds)}
-              onCrossWorkingHedge={(orderId) => onCrossWorkingHedge(instrumentId, orderId)}
-              onPassiveOrder={(side, price, sizeM) => onPassiveOrder(instrumentId, side, price, sizeM)}
-              onCancelPassive={(orderId) => onCancelPassive(instrumentId, orderId)}
+                onStartWorkingHedge(exchangeInstrumentId, side, sizeM, strategy, clipSizeM, intervalSeconds)}
+              onCancelWorkingHedge={(orderId) => onCancelWorkingHedge(exchangeInstrumentId, orderId)}
+              onPauseWorkingHedge={(orderId) => onPauseWorkingHedge(exchangeInstrumentId, orderId)}
+              onResumeWorkingHedge={(orderId) => onResumeWorkingHedge(exchangeInstrumentId, orderId)}
+              onModifyWorkingHedge={(orderId, clipSizeM, intervalSeconds) => onModifyWorkingHedge(exchangeInstrumentId, orderId, clipSizeM, intervalSeconds)}
+              onCrossWorkingHedge={(orderId) => onCrossWorkingHedge(exchangeInstrumentId, orderId)}
+              onPassiveOrder={(side, price, sizeM) => onPassiveOrder(exchangeInstrumentId, side, price, sizeM)}
+              onCancelPassive={(orderId) => onCancelPassive(exchangeInstrumentId, orderId)}
             />
           </div>
         </div>
@@ -144,14 +175,14 @@ export function MultiTradingTerminal({
             {snapshot.legs.map((leg) => {
               const instrument = leg.options.instrument
               return (
-                <button type="button" key={instrument.id} className={instrument.id === instrumentId ? 'selected' : ''} onClick={() => setSelectedInstrumentId(instrument.id)}>
+                <button type="button" key={instrument.id} className={instrument.id === exchangeInstrumentId ? 'selected' : ''} onClick={() => setSelectedExchangeInstrumentId(instrument.id)}>
                   <strong>{instrument.symbol}</strong><span>{leg.market.regime.replace(/-/g, ' ')}</span>
                 </button>
               )
             })}
           </div>
           <div className="terminal-panel chart-panel">
-            <PriceChart history={selectedLeg.priceHistory} trades={selectedLeg.trades} instrument={selectedLeg.options.instrument} />
+            <PriceChart history={selectedExchangeLeg.priceHistory} trades={selectedExchangeLeg.trades} instrument={selectedExchangeLeg.options.instrument} />
           </div>
           <div className="terminal-panel grow"><MultiTradeBlotter snapshot={snapshot} /></div>
         </div>

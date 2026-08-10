@@ -1,4 +1,5 @@
 import { SeededRandom } from './random'
+import { commissionForNotional } from './buy-side-market'
 import type {
   MacroAssetConfig,
   MacroAssetId,
@@ -26,37 +27,37 @@ const FACTORS: PortfolioFactor[] = ['growth', 'inflation', 'policy', 'risk', 'en
 export const MACRO_ASSETS: readonly MacroAssetConfig[] = [
   {
     id: 'es-macro', symbol: 'ES', displayName: 'S&P 500 Future', assetClass: 'equity-index', initialPrice: 5400, priceDecimals: 2,
-    annualVolatility: 0.17, transactionCostBps: 0.7, maxAbsWeight: 0.35,
+    annualVolatility: 0.17, transactionCostBps: 0.7, unitLabel: 'contract', unitPlural: 'contracts', contractMultiplier: 50, commissionPerUnit: 2.5, minimumCommission: 2.5, quantityStep: 1, maxAbsWeight: 0.35,
     description: 'Broad US equity beta. Sensitive to growth, real-rate repricing and risk sentiment.',
     factorLoadings: { growth: 0.85, inflation: -0.24, policy: -0.72, risk: 1.05, energy: -0.12, usd: -0.08 },
   },
   {
     id: 'ty-macro', symbol: 'TY', displayName: 'US 10Y Treasury Future', assetClass: 'rates', initialPrice: 111.5, priceDecimals: 3,
-    annualVolatility: 0.075, transactionCostBps: 0.45, maxAbsWeight: 0.35,
+    annualVolatility: 0.075, transactionCostBps: 0.45, unitLabel: 'contract', unitPlural: 'contracts', contractMultiplier: 1000, commissionPerUnit: 2.0, minimumCommission: 2, quantityStep: 1, maxAbsWeight: 0.35,
     description: 'US duration exposure. Benefits from weaker growth and easier policy; vulnerable to inflation surprises.',
     factorLoadings: { growth: -0.38, inflation: -0.82, policy: -0.95, risk: -0.30, energy: -0.18, usd: 0.04 },
   },
   {
     id: 'fgbl-macro', symbol: 'FGBL', displayName: 'Euro-Bund Future', assetClass: 'rates', initialPrice: 132.4, priceDecimals: 2,
-    annualVolatility: 0.068, transactionCostBps: 0.55, maxAbsWeight: 0.30,
+    annualVolatility: 0.068, transactionCostBps: 0.55, unitLabel: 'contract', unitPlural: 'contracts', contractMultiplier: 1000, commissionPerUnit: 2.5, minimumCommission: 2.5, quantityStep: 1, maxAbsWeight: 0.30,
     description: 'European duration. Strongly exposed to inflation and central-bank repricing.',
     factorLoadings: { growth: -0.30, inflation: -0.68, policy: -0.80, risk: -0.24, energy: -0.20, usd: -0.12 },
   },
   {
     id: 'brn-macro', symbol: 'BRN', displayName: 'Brent Crude Future', assetClass: 'commodities', initialPrice: 78.5, priceDecimals: 2,
-    annualVolatility: 0.34, transactionCostBps: 1.4, maxAbsWeight: 0.25,
+    annualVolatility: 0.34, transactionCostBps: 1.4, unitLabel: 'contract', unitPlural: 'contracts', contractMultiplier: 1000, commissionPerUnit: 3.0, minimumCommission: 3, quantityStep: 1, maxAbsWeight: 0.25,
     description: 'Global crude exposure. Dominated by energy supply, growth and geopolitical risk.',
     factorLoadings: { growth: 0.46, inflation: 0.16, policy: -0.10, risk: 0.18, energy: 1.28, usd: -0.24 },
   },
   {
     id: 'gold-macro', symbol: 'XAU', displayName: 'Gold', assetClass: 'commodities', initialPrice: 2390, priceDecimals: 1,
-    annualVolatility: 0.19, transactionCostBps: 1.0, maxAbsWeight: 0.25,
+    annualVolatility: 0.19, transactionCostBps: 1.0, unitLabel: 'contract', unitPlural: 'contracts', contractMultiplier: 100, commissionPerUnit: 3.0, minimumCommission: 3, quantityStep: 1, maxAbsWeight: 0.25,
     description: 'Macro hedge sensitive to real rates, USD and risk-off demand.',
     factorLoadings: { growth: -0.10, inflation: 0.25, policy: -0.58, risk: -0.52, energy: 0.06, usd: -0.72 },
   },
   {
     id: 'eurusd-macro', symbol: 'EUR/USD', displayName: 'EUR/USD', assetClass: 'fx', initialPrice: 1.085, priceDecimals: 4,
-    annualVolatility: 0.095, transactionCostBps: 0.35, maxAbsWeight: 0.30,
+    annualVolatility: 0.095, transactionCostBps: 0.35, unitLabel: 'lot', unitPlural: 'lots', contractMultiplier: 100000, commissionPerUnit: 2.5, minimumCommission: 2.5, quantityStep: .1, maxAbsWeight: 0.30,
     description: 'Synthetic EUR/USD exposure. Most sensitive to USD and relative policy repricing.',
     factorLoadings: { growth: 0.12, inflation: -0.08, policy: -0.20, risk: -0.12, energy: -0.08, usd: -1.08 },
   },
@@ -303,6 +304,7 @@ export class MacroPortfolioEngine {
       peakConcentration: 0,
       turnover: 0,
       transactionCosts: 0,
+      commissions: 0,
       dealerRfqs: [],
       dealerTrades: 0,
       dealerSavings: 0,
@@ -357,7 +359,9 @@ export class MacroPortfolioEngine {
     const oneWayBps = prepared.asset.transactionCostBps * sizeMultiplier * stressMultiplier
     const sign = prepared.side === 'buy' ? 1 : -1
     const price = mid * (1 + sign * oneWayBps / 10_000)
-    return { price, cost: Math.abs(prepared.deltaUnits) * Math.abs(price - mid), oneWayBps }
+    const marketCost = Math.abs(prepared.deltaUnits) * Math.abs(price - mid)
+    const commission = commissionForNotional(prepared.asset, price, Math.abs(prepared.deltaValue), 'direct-market')
+    return { price, cost: marketCost + commission, oneWayBps }
   }
 
   private executePrepared(
@@ -372,12 +376,15 @@ export class MacroPortfolioEngine {
     if (!prepared.accepted) return { accepted: false, reason: prepared.reason }
     const mid = this.state.prices[intent.assetId]
     const tradedNotional = Math.abs(prepared.deltaValue)
-    const transactionCost = Math.abs(prepared.deltaUnits) * Math.abs(executionPrice - mid)
+    const marketCost = Math.abs(prepared.deltaUnits) * Math.abs(executionPrice - mid)
+    const commission = commissionForNotional(prepared.asset, executionPrice, tradedNotional, executionVenue)
+    const transactionCost = marketCost + commission
 
-    this.state.cash -= prepared.deltaUnits * executionPrice
+    this.state.cash -= prepared.deltaUnits * executionPrice + commission
     this.state.positions[intent.assetId].units += prepared.deltaUnits
     this.state.positions[intent.assetId].lastTradePrice = executionPrice
     this.state.transactionCosts += transactionCost
+    this.state.commissions += commission
     this.state.turnover += tradedNotional / this.state.options.initialNav
     this.state.attribution.byFactor['transaction-costs'] -= transactionCost
 
@@ -404,6 +411,8 @@ export class MacroPortfolioEngine {
       targetWeight: prepared.targetWeight,
       tradedNotional,
       transactionCost,
+      commission,
+      marketCost,
       thesisId,
       executionVenue,
       benchmarkPrice,

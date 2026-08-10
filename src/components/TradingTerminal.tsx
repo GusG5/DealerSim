@@ -21,6 +21,7 @@ interface TradingTerminalProps {
   onSubmitQuote: (bid?: number, ask?: number) => void
   onPassRfq: () => void
   onMarketHedge: (side: TradeSide, sizeM: number) => void
+  onInterdealerHedge: (side: TradeSide, sizeM: number) => void
   onStartWorkingHedge: (side: TradeSide, sizeM: number, strategy: WorkingHedgeStrategy, clipSizeM: number, intervalSeconds: number) => void
   onCancelWorkingHedge: (orderId: string) => void
   onPauseWorkingHedge: (orderId: string) => void
@@ -42,6 +43,7 @@ export function TradingTerminal({
   onSubmitQuote,
   onPassRfq,
   onMarketHedge,
+  onInterdealerHedge,
   onStartWorkingHedge,
   onCancelWorkingHedge,
   onPauseWorkingHedge,
@@ -98,6 +100,7 @@ export function TradingTerminal({
             <HedgePanel
               snapshot={snapshot}
               onMarketHedge={onMarketHedge}
+              onInterdealerHedge={onInterdealerHedge}
               onStartWorkingHedge={onStartWorkingHedge}
               onCancelWorkingHedge={onCancelWorkingHedge}
               onPauseWorkingHedge={onPauseWorkingHedge}

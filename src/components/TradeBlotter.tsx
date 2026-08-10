@@ -59,6 +59,8 @@ function sourceLabel(source: Trade['source']): string {
       return 'Client'
     case 'market-hedge':
       return 'Market'
+    case 'interdealer-hedge':
+      return 'Interdealer'
     case 'worked-hedge':
       return 'Worked'
     case 'passive-hedge':

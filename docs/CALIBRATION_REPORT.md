@@ -1,3 +1,21 @@
+# DealerSim v3.6 Calibration & Control Report
+
+## v3.6 control update
+
+The v3.6 execution redesign adds three controls on top of the existing economic-coherence framework:
+
+- **Convex block friction:** size, liquidity and volatility increase aggressive execution cost nonlinearly rather than by a flat spread multiplier.
+- **Persistent-flow memory:** rapid same-direction child orders accumulate decaying information leakage, preventing minimum-clip button gaming.
+- **Matched-seed route dominance:** immediate market, minimum-clip, worked/RFQ/TWAP and interdealer/warehouse policies are compared across identical seeds. A route winning more than 72% of matched comparisons triggers a calibration warning.
+
+The final 384-session v3.6 suite completes with **zero warnings**. The highest matched-seed win share is 56.3% for the APEX worked-hedge policy; the highest fund execution win share is 50.0% for TWAP. See `CALIBRATION_LAB.md` for the full table.
+
+## Verification
+
+The TypeScript project compiles cleanly. In the supplied archive, the normal Vitest/Vite runtime contains Windows-native dependencies, so it cannot execute under the Linux QA container without reinstalling packages. The existing assertion corpus was therefore compiled and executed through a small local assertion shim; **37/37 assertions passed**, including deterministic engine verification and the full calibration lab.
+
+---
+
 # DealerSim v3.0 Calibration & Control Report
 
 ## Purpose

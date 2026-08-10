@@ -5624,3 +5624,295 @@ kbd {
   font: inherit;
 }
 .storage-recovery-notice button:hover { background: #12465d; }
+
+/* v3.6 decision-time information architecture */
+.decision-context-strip {
+  background: linear-gradient(180deg, rgba(7, 25, 38, .98), rgba(6, 20, 31, .98));
+}
+.decision-context-strip .factor-chip-row > span {
+  border: 1px solid var(--line-soft);
+  background: rgba(7, 31, 47, .72);
+  color: var(--text-secondary);
+}
+.decision-context-strip .factor-chip-row > span b { color: var(--text); }
+
+.live-decision-portfolio .compact-live-risk { background: rgba(4, 19, 29, .72); }
+.live-decision-portfolio .live-position-table { flex: 1 1 auto; }
+.live-risk-message-strip {
+  display: grid;
+  gap: 4px;
+  padding: 6px 8px;
+  border-top: 1px solid var(--line-soft);
+  background: rgba(6, 24, 34, .82);
+}
+.live-risk-message-strip article {
+  display: grid;
+  grid-template-columns: minmax(90px, .65fr) minmax(0, 1.35fr);
+  gap: 7px;
+  padding: 5px 7px;
+  border-left: 2px solid rgba(85, 219, 255, .36);
+  background: rgba(8, 35, 49, .68);
+  font-size: 8px;
+}
+.live-risk-message-strip article.warning { border-left-color: var(--amber); }
+.live-risk-message-strip article.critical { border-left-color: var(--red); }
+.live-risk-message-strip strong { color: var(--text); }
+.live-risk-message-strip span { color: var(--muted); line-height: 1.35; }
+
+.live-news-column .prominent-live-news {
+  min-height: 300px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(7, 27, 40, .98), rgba(5, 20, 31, .96));
+}
+.live-news-column .fund-news-list article,
+.live-news-column .macro-news-tape .macro-headline { padding-top: 8px; padding-bottom: 8px; }
+.live-news-column .fund-news-list article strong,
+.live-news-column .macro-news-tape .macro-headline strong { font-size: 9px; }
+.live-news-column .fund-news-list article p,
+.live-news-column .macro-news-tape .macro-headline p { font-size: 8px; line-height: 1.45; }
+.live-review-handoff {
+  margin: 0;
+  padding: 9px 10px;
+  border-top: 1px solid var(--line-soft);
+  color: var(--muted);
+  background: rgba(6, 21, 31, .9);
+  font-size: 8px;
+  line-height: 1.4;
+}
+
+.fund-info-column.live-news-column,
+.live-information-column.live-news-column {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.fund-info-column.live-news-column > .prominent-live-news,
+.live-information-column.live-news-column > .prominent-live-news { flex: 1 0 300px; }
+.fund-info-column.live-news-column > .sales-colour-panel,
+.live-information-column.live-news-column > .sales-colour-panel { flex: 0 0 auto; }
+.fund-info-column.live-news-column > .fund-working-panel,
+.live-information-column.live-news-column > .live-working-panel { flex: 0 0 auto; min-height: 100px; }
+.fund-info-column.live-news-column > .fund-dealer-rfq { flex: 0 0 auto; }
+
+.macro-tape-panel.live-news-column {
+  display: grid;
+  grid-template-rows: 46px minmax(0, 1fr) auto;
+}
+.macro-tape-panel.live-news-column .prominent-live-news { min-height: 0; overflow-y: auto; }
+
+/* Interdealer is a block-liquidity alternative, not another instant-market button. */
+.execution-choice.interdealer,
+.execution-choice[data-route='interdealer'] {
+  border-color: rgba(167, 139, 250, .38);
+  background: rgba(70, 52, 128, .12);
+}
+
+@media (max-height: 820px) {
+  .live-news-column .prominent-live-news { min-height: 235px; }
+  .live-risk-message-strip article { grid-template-columns: 1fr; gap: 2px; }
+}
+
+/* v3.6.1 buy-side execution: native quantity + executable bid/offer */
+.macro-watch-head,
+.macro-watch-row {
+  grid-template-columns: minmax(92px, 1.3fr) .72fr .72fr .62fr .68fr .82fr;
+}
+
+.fund-watch-head,
+.fund-watch-list button {
+  grid-template-columns: 1.25fr .72fr .72fr .62fr .62fr .74fr;
+}
+
+.buy-side-market-quote {
+  display: grid;
+  grid-template-columns: 1fr .78fr 1fr;
+  gap: 4px;
+  margin: 6px 0 7px;
+}
+
+.buy-side-market-quote > div {
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--line-soft);
+  background: #061925;
+  text-align: center;
+}
+
+.buy-side-market-quote span,
+.buy-side-market-quote small {
+  display: block;
+  color: var(--muted);
+  font-size: 7px;
+  text-transform: uppercase;
+}
+
+.buy-side-market-quote strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.buy-side-market-quote .bid {
+  border-color: rgba(251, 113, 133, .38);
+  background: rgba(251, 113, 133, .055);
+}
+.buy-side-market-quote .bid strong { color: #ff8ca0; }
+.buy-side-market-quote .offer {
+  border-color: rgba(52, 211, 153, .38);
+  background: rgba(52, 211, 153, .055);
+}
+.buy-side-market-quote .offer strong { color: #6ee7b7; }
+.buy-side-market-quote .mid strong { color: #d9e8ef; }
+
+.buy-side-quantity-input > div,
+.fund-notional-input.buy-side-quantity-input > div,
+.live-notional-input.buy-side-quantity-input > div {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.buy-side-quantity-input input { text-align: right; }
+
+.macro-target-readout small {
+  display: block;
+  margin-top: 1px;
+  color: var(--muted);
+  font-size: 7px;
+}
+
+.macro-position-head.buy-side-position-head,
+.macro-position-row.buy-side-position-row {
+  grid-template-columns: 1.15fr .7fr .65fr .9fr .78fr;
+}
+
+.fund-position-head.buy-side-position-head,
+.fund-position-row.buy-side-position-row {
+  grid-template-columns: 1.15fr .7fr .65fr .9fr .65fr;
+}
+
+.buy-side-position-row > span:not(:first-child),
+.buy-side-position-row > strong {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* v3.6.2 — independent client-ticket vs exchange selection, clearer size-adjusted execution */
+.multi-exchange-selector {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: 6px;
+  padding: 5px 7px;
+  border: 1px solid var(--line-soft);
+  border-bottom: 0;
+  background: #061925;
+}
+
+.multi-exchange-selector > div:first-child {
+  display: flex;
+  min-width: 118px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+}
+
+.multi-exchange-selector > div:first-child span {
+  color: var(--cyan);
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: .04em;
+}
+
+.multi-exchange-selector > div:first-child small {
+  color: var(--muted);
+  font-size: 6.5px;
+}
+
+.multi-exchange-selector-buttons {
+  display: grid;
+  gap: 4px;
+}
+
+.multi-exchange-selector-buttons button {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 5px 7px;
+  border: 1px solid var(--line-soft);
+  background: #071d29;
+  color: #9ec4d2;
+  cursor: pointer;
+  text-align: left;
+}
+
+.multi-exchange-selector-buttons button strong {
+  color: #dff8ff;
+  font-size: 9px;
+}
+
+.multi-exchange-selector-buttons button span {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 7px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.multi-exchange-selector-buttons button.selected {
+  border-color: rgba(34, 211, 238, .55);
+  background: #0a3144;
+  box-shadow: inset 0 -2px 0 var(--cyan);
+}
+
+.size-adjusted-executable-quote {
+  display: grid;
+  grid-template-columns: 1fr 1.12fr 1fr;
+  gap: 4px;
+  margin: 6px 0 4px;
+}
+
+.size-adjusted-executable-quote > div {
+  min-width: 0;
+  padding: 6px 7px;
+  border: 1px solid var(--line-soft);
+  background: #061925;
+  text-align: center;
+}
+
+.size-adjusted-executable-quote span,
+.size-adjusted-executable-quote small {
+  display: block;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 6.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.size-adjusted-executable-quote strong {
+  display: block;
+  margin: 2px 0 1px;
+  color: #e6f7fd;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.size-adjusted-executable-quote .executable-sell {
+  border-color: rgba(52, 211, 153, .32);
+  background: rgba(52, 211, 153, .045);
+}
+.size-adjusted-executable-quote .executable-sell strong { color: #6ee7b7; }
+
+.size-adjusted-executable-quote .executable-buy {
+  border-color: rgba(251, 113, 133, .32);
+  background: rgba(251, 113, 133, .045);
+}
+.size-adjusted-executable-quote .executable-buy strong { color: #ff8ca0; }
+
+.size-adjusted-executable-quote .executable-top strong {
+  color: #d9e8ef;
+  font-size: 10px;
+}

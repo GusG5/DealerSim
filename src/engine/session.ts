@@ -47,6 +47,8 @@ import { SeededRandom } from './random'
 import { computeScore } from './score'
 
 
+function clamp(value: number, min: number, max: number): number { return Math.min(max, Math.max(min, value)) }
+
 function dealerPhaseSettings(elapsed: number, duration: number, events: ScheduledMarketEvent[]): { phase: DealerMarketPhase; liquidity: number; volatility: number } {
   const eventWindow = events.some((event) => Math.abs(event.triggerAt - elapsed) <= Math.max(7, duration * 0.025))
   if (eventWindow) return { phase: 'event-window', liquidity: 0.55, volatility: 1.60 }
@@ -88,6 +90,8 @@ export class DealerSimEngine {
   private tradeCounter = 1
   private passiveCounter = 1
   private workingHedgeCounter = 1
+  private interdealerPressure = 0
+  private lastInterdealerAt = -Infinity
 
   constructor(options: SessionOptions) {
     this.rng = new SeededRandom(options.seed)
@@ -400,6 +404,68 @@ export class DealerSimEngine {
       `${side === 'buy' ? 'Bought' : 'Sold'} ${formatInstrumentSize(execution.filledM, this.snapshot.options.instrument)} at market`,
       `${formatPrice(execution.averagePrice, this.snapshot.options.instrument.priceDecimals)} · ${execution.levelsConsumed} depth level${execution.levelsConsumed === 1 ? '' : 's'} consumed${estimate.temporaryImpactPips > 0.1 ? ` · est. ${estimate.temporaryImpactPips.toFixed(1)} tick impact` : ''}.`,
       execution.levelsConsumed > 2 || estimate.temporaryImpactPips > 1.5 ? 'warning' : 'info',
+    )
+    return this.getSnapshot()
+  }
+
+
+  hedgeInterdealer(side: TradeSide, sizeM: number): SessionSnapshot {
+    if (this.snapshot.status !== 'running') return this.getSnapshot()
+    const instrument = this.snapshot.options.instrument
+    const requested = Math.max(0, Math.min(instrument.maximumSizeM, sizeM))
+    if (requested <= 0) return this.getSnapshot()
+
+    const direct = estimateBlockExecution(side, requested, this.snapshot.market.orderBook, this.snapshot.market, instrument)
+    const secondsSinceLast = this.snapshot.elapsedSeconds - this.lastInterdealerAt
+    const recentPressure = secondsSinceLast <= 30 ? this.interdealerPressure : this.interdealerPressure * 0.24
+    const capacityBase = Math.max(instrument.minimumSizeM, this.snapshot.market.displayedDepthM * (0.34 + this.snapshot.market.liquidity * 0.34))
+    const capacityWithdrawal = 1 / (1 + recentPressure * 0.34)
+    const available = Math.min(requested, capacityBase * capacityWithdrawal * this.flowRng.range(0.72, 1.18))
+    if (available <= 0) return this.getSnapshot()
+
+    const staleOrWrongWay = this.flowRng.chance(clamp(0.16 + Math.max(0, 0.58 - this.snapshot.market.liquidity) * 0.18 + recentPressure * 0.075, 0.08, 0.62))
+    const quoteQualityBase = staleOrWrongWay ? this.flowRng.range(0.72, 0.96) : this.flowRng.range(0.34, 0.58)
+    const quoteQuality = Math.min(1.18, quoteQualityBase + recentPressure * 0.055)
+    const blockCostPips = Math.max(
+      this.snapshot.market.spreadPips * 0.46,
+      this.snapshot.market.spreadPips * 0.36 + direct.temporaryImpactPips * quoteQuality,
+    )
+    const sign = side === 'buy' ? 1 : -1
+    const price = this.snapshot.market.mid + sign * blockCostPips * instrument.pipSize
+    const executionCost = Math.abs(price - this.snapshot.market.mid) * available * instrument.pnlMultiplier
+    const impactPips = direct.temporaryImpactPips * (staleOrWrongWay ? 0.44 : 0.26)
+    const impactCost = impactPips * instrument.pipSize * available * instrument.pnlMultiplier
+    const trade: Trade = {
+      id: `trade-${this.tradeCounter++}`,
+      timestamp: this.snapshot.elapsedSeconds,
+      instrument: instrument.symbol,
+      side,
+      price,
+      sizeM: available,
+      source: 'interdealer-hedge',
+      commission: 0,
+      executionCost: executionCost + impactCost,
+      temporaryImpactPips: impactPips,
+      marketImpactCost: impactCost,
+      executionStrategy: 'liquidity-sensitive',
+      referenceMid: this.snapshot.market.mid,
+      exchangeSlippageCost: executionCost,
+    }
+    this.recordTrade(trade)
+    this.snapshot.metrics.hedgeTrades += 1
+    this.interdealerPressure = clamp(recentPressure + 0.28 + available / Math.max(instrument.minimumSizeM, capacityBase) * 0.34, 0, 2.8)
+    this.lastInterdealerAt = this.snapshot.elapsedSeconds
+
+    if (instrument.marketStructure === 'central-limit-order-book') {
+      const participation = available / Math.max(instrument.minimumSizeM, direct.displayedDepthM)
+      applyAggressiveExecutionImpact(this.marketState, side, impactPips, participation * 0.42, instrument, 'liquidity-sensitive')
+    }
+
+    this.addEvent(
+      'market',
+      `${side === 'buy' ? 'Bought' : 'Sold'} ${formatInstrumentSize(available, instrument)} interdealer`,
+      `${formatPrice(price, instrument.priceDecimals)} · block liquidity${available + 1e-9 < requested ? ` · only ${formatInstrumentSize(available, instrument)} of ${formatInstrumentSize(requested, instrument)} available` : ''}${staleOrWrongWay ? ' · quote was relatively poor' : ''}${recentPressure > 0.8 ? ' · repeated street inquiry is moving liquidity away' : ''}.`,
+      staleOrWrongWay || available + 1e-9 < requested ? 'warning' : 'info',
     )
     return this.getSnapshot()
   }
@@ -1023,7 +1089,8 @@ export class DealerSimEngine {
         }
       }
     } else {
-      this.snapshot.metrics.exchangeHedgeVolumeM += trade.sizeM
+      if (trade.source === 'interdealer-hedge') this.snapshot.metrics.interdealerHedgeVolumeM += trade.sizeM
+      else this.snapshot.metrics.exchangeHedgeVolumeM += trade.sizeM
       this.snapshot.metrics.marketImpactCost += trade.marketImpactCost ?? 0
       this.snapshot.metrics.exchangeSlippageCost += trade.exchangeSlippageCost ?? 0
     }
@@ -1136,6 +1203,7 @@ function createEmptyMetrics(): SessionMetrics {
     startEquity: 0,
     grossClientVolumeM: 0,
     exchangeHedgeVolumeM: 0,
+    interdealerHedgeVolumeM: 0,
     internalisedVolumeM: 0,
     workedHedgeVolumeM: 0,
     marketImpactCost: 0,

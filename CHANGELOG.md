@@ -1,3 +1,37 @@
+## 3.6.2 - Independent exchange selection & visible size-adjusted liquidity
+
+- Decoupled the multi-market sell-side client ticket from the exchange/hedge market. New incoming RFQs may change the active client ticket, but they no longer silently switch the exchange book, hedge panel or chart.
+- Added an explicit **EXCHANGE / HEDGE MARKET** selector above the order book. APEX / ES / BRN must be chosen deliberately before exchange execution; header and chart market selectors follow the same exchange state.
+- Kept the correct microstructure distinction between quoted top-of-book and size-dependent executable prices: typing a larger order does not mechanically move L1 before execution.
+- Added a prominent size-adjusted executable SELL VWAP / TOP MARKET / BUY VWAP strip that updates immediately with entered hedge size and reports levels swept.
+- Increased post-trade spread pressure from large aggressive central-book executions so genuine liquidity consumption produces a more visible temporary widening and depth deterioration before recovery.
+- Re-ran strict TypeScript compilation, deterministic dealer/macro/fund engine verification and the 384-session route-dominance calibration with zero warnings.
+
+## 3.6.1 - Native-quantity buy-side execution
+
+- Reworked all buy-side live trade tickets to default to native market quantity: shares for equities, contracts for futures and lots for FX, with notional calculated automatically from quantity and price.
+- Added visible executable top-of-book bid / mid / offer to Global Macro, L/S Equity HF, Long-Only AM and Strategic PM live terminals, plus bid and offer columns in market watch.
+- Preserved target-weight sizing as an optional portfolio-construction tool; target weights now translate transparently into the native quantity that must actually be executed.
+- Reworked buy-side dealer RFQs around native requested quantity. Dealers return firm two-way bid/offer spreads and capacity, with partial/custom fills expressed in native quantity.
+- Added explicit buy-side brokerage/exchange commissions to direct market, worked/TWAP and auction execution. Dealer-RFQ economics remain embedded in the quoted spread and do not receive a second explicit commission charge.
+- Split each buy-side trade's recorded execution cost into market/spread-impact cost and explicit commission, while keeping total transaction cost and NAV/P&L accounting fully inclusive.
+- Added live and post-session commission reporting and persisted commission totals in buy-side session summaries.
+- Added deterministic regression checks for direct buy-side commissions and zero separate commission on dealer-RFQ fills.
+- Re-ran deterministic engine verification and the 384-session route-dominance calibration with zero warnings.
+
+## 3.6.0 - Decision-time terminal & execution discipline
+
+- Reworked every buy-side live terminal around a three-stage information architecture: rich pre-market research, sparse decision-time trading, and detailed post-session analytics.
+- Removed live stress/factor/score/journal clutter from the continuous Macro and Equity Fund terminals; Strategic PM keeps thesis/invalidation at the rebalance ticket but moves history and attribution to review.
+- Made live news/catalysts and actual position notional/weight more prominent while retaining compact risk, event and execution context.
+- Increased normal quoted-spread training friction modestly, reduced top-level displayed depth and made aggressive block impact more convex with size, volatility and liquidity.
+- Added stateful same-direction execution memory so rapid child-order splitting accumulates information leakage instead of mechanically escaping block costs.
+- Added a sell-side interdealer block hedge route with deeper but finite capacity, variable quote quality, stale/wrong-way risk and repeated-inquiry liquidity withdrawal.
+- Rebalanced buy-side direct, dealer-RFQ and worked-order economics so urgency and market movement can justify crossing while patient execution is not automatically optimal.
+- Extended the deterministic 384-session lab to explicit always-market, minimum-clip split, always-RFQ, always-TWAP, immediate-hedge, worked-hedge and interdealer/warehouse policies with matched-seed route-dominance checks.
+- Final v3.6 calibration: 384/384 scripted sessions completed with zero warnings; no tested route won more than 56.3% of matched dealer seeds or 50.0% of matched fund seeds.
+- Fixed buy-side attribution reconciliation when a fund's own direct execution creates persistent synthetic-mid impact.
+
 ## 3.5.4 - Public calibration timeout
 
 - Increased the Vitest timeout for the 384-session calibration suite to 60 seconds.

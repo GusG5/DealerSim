@@ -131,6 +131,8 @@ export interface LiveMacroTrade {
   targetWeight: number
   tradedNotional: number
   transactionCost: number
+  commission: number
+  marketCost: number
   executionVenue: LiveMacroExecutionVenue
   benchmarkPrice: number
   executionSlippage: number
@@ -223,6 +225,7 @@ export interface LiveMacroSessionSnapshot {
   peakConcentration: number
   turnover: number
   transactionCosts: number
+  commissions: number
   activeDealerRfq?: LiveMacroDealerRfq
   dealerRfqs: LiveMacroDealerRfq[]
   dealerTrades: number

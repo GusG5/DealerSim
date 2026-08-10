@@ -94,6 +94,12 @@ export interface FundAssetConfig {
   priceDecimals: number
   annualVolatility: number
   transactionCostBps: number
+  unitLabel: string
+  unitPlural: string
+  contractMultiplier: number
+  commissionPerUnit: number
+  minimumCommission: number
+  quantityStep: number
   maxAbsWeight: number
   beta: number
   borrowRatePct: number
@@ -158,6 +164,8 @@ export interface FundTrade {
   targetWeight: number
   tradedNotional: number
   transactionCost: number
+  commission: number
+  marketCost: number
   executionVenue: FundExecutionVenue
   benchmarkPrice: number
   executionSlippage: number
@@ -382,6 +390,7 @@ export interface FundSessionSnapshot {
   workingOrders: FundWorkingOrder[]
   borrowCosts: number
   transactionCosts: number
+  commissions: number
   turnover: number
   peakGrossExposure: number
   peakConcentration: number
@@ -421,6 +430,7 @@ export interface FundSessionSummary {
   peakGrossExposure: number
   peakBetaExposure: number
   transactionCosts: number
+  commissions?: number
   borrowCosts: number
   dealerTrades: number
   dealerSavings: number

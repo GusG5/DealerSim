@@ -10,7 +10,7 @@ describe('DealerSim strategy / exploit calibration lab', () => {
     const results = runCalibrationLab()
     console.log('DealerSim strategy / exploit calibration lab')
     for (const item of results) {
-      console.log(`${item.name.padEnd(38)} score=${mean(item.scores).toFixed(1)} avg_return=${mean(item.returns).toFixed(4)} ${item.warnings.length ? `WARN ${item.warnings.join(' | ')}` : 'OK'}`)
+      console.log(`${item.name.padEnd(42)} score=${mean(item.scores).toFixed(1)} avg_return=${mean(item.returns).toFixed(4)} cost=${mean(item.costsBps).toFixed(2)}bp ${item.warnings.length ? `WARN ${item.warnings.join(' | ')}` : 'OK'}`)
     }
     const warningCount = results.reduce((count, item) => count + item.warnings.length, 0)
     console.log(`Warnings: ${warningCount}`)

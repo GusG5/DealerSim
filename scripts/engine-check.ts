@@ -562,6 +562,8 @@ function globalMacroPortfolioCheck(): void {
     invalidation: 'Inflation normalises and policy pricing reverses materially.',
   }
   assert(a.executeTarget(intent).accepted, 'Global Macro engine should accept a mandate-compliant target weight')
+  assert(a.snapshot().commissions > 0, 'Direct Global Macro execution should charge an explicit commission')
+  assert(a.snapshot().trades[0].commission > 0 && a.snapshot().trades[0].transactionCost >= a.snapshot().trades[0].commission, 'Macro trade history should separate commission from total transaction cost')
   assert(b.executeTarget(intent).accepted, 'Deterministic comparison engine should accept the same trade')
   assert(a.executeTarget({ ...intent, assetId: 'ty-macro', targetWeight: -0.08 }).accepted, 'Global Macro engine should support cross-asset positions')
   assert(b.executeTarget({ ...intent, assetId: 'ty-macro', targetWeight: -0.08 }).accepted, 'Comparison engine should support the same cross-asset position')
@@ -627,6 +629,7 @@ function buySideDealerRfqCheck(): void {
   assert(after.dealerTrades === 1, 'Dealer execution count should increment')
   assert(after.trades[0].executionVenue === 'dealer-rfq', 'Trade blotter should record dealer RFQ as the execution venue')
   assert(after.trades[0].dealerName === best.dealerName, 'Dealer name should persist into trade history')
+  assert(after.trades[0].commission === 0, 'Dealer RFQ execution should embed dealer economics in the spread rather than double-charge commission')
   assert(after.dealerRfqs[0].status === 'executed', 'Completed RFQ should be preserved in execution history')
   assert(after.theses.length === 1, 'Dealer-executed portfolio changes should still require a thesis record')
 
@@ -664,6 +667,7 @@ function liveMacroTradingCheck(): void {
     invalidation: 'Inflation surprise reverses and duration reprices higher.',
   }
   assert(a.executeTarget(intent).accepted, 'Live macro trader should be able to put on risk immediately')
+  assert(a.snapshot().commissions > 0, 'Direct live-macro execution should charge an explicit commission')
   assert(b.executeTarget(intent).accepted, 'Comparison live macro engine should accept identical initial risk')
   assert(a.requestDealerQuotes({ ...intent, assetId: 'gold-macro', targetWeight: 0.08, recordThesis: false }, 3).accepted, 'Live macro mode should request dealer liquidity while markets run')
   const rfq = a.snapshot().activeDealerRfq
@@ -721,6 +725,7 @@ function equityFundCheck(): void {
   assert([...chainCounts.values()].some((count) => count >= 3), 'Equity fund scenario should include at least one coherent multi-stage catalyst chain')
   assert(opening.auditTrail.length > 0, 'Equity fund should initialise a decision audit trail')
   assert(engine.executeTarget({ assetId: 'mega-fund', targetWeight: 0.10, recordThesis: true, tag: 'earnings', horizon: 'days', conviction: 4, invalidation: 'Forward guidance misses expectations.' }).accepted, 'Equity HF should establish a long position immediately')
+  assert(engine.snapshot().commissions > 0, 'Direct equity-fund execution should charge an explicit commission')
   assert(engine.snapshot().auditTrail.some((entry) => entry.type === 'trade' && entry.assetId === 'mega-fund'), 'Equity fund trade decisions should be captured in the replay audit trail')
   const shortBeforeLocate = engine.executeTarget({ assetId: 'nova-fund', targetWeight: -0.06, recordThesis: false })
   assert(!shortBeforeLocate.accepted, 'Single-name short should require a borrow locate')

@@ -17,7 +17,7 @@ A real-time dealer / flow-trading simulation in which the user:
 - receives institutional-style client RFQs;
 - makes two-way or directional block prices;
 - compares the client quote with full-block executable market alternatives rather than only top-of-book spread;
-- manages inventory, internalises offsetting client flow and hedges residual risk;
+- manages inventory, internalises offsetting client flow and hedges residual risk through exchange/worked execution or finite-capacity interdealer blocks;
 - chooses between immediate market execution, passive orders and worked hedging;
 - trades single-, dual- and three-market desks across synthetic equities and macro futures;
 - operates through normal, fast, illiquid, toxic-flow and news-driven regimes;
@@ -40,8 +40,9 @@ The live macro mode includes:
 - cross-asset factor transmission across growth, inflation, policy, risk, energy and USD;
 - exact notional or target-weight sizing;
 - direct market, dealer RFQ and worked execution routes;
-- gross/net exposure, drawdown, concentration, stress testing and factor-risk monitoring;
-- morning briefing and opening-book construction before the live clock begins.
+- compact gross/net, concentration and factor-risk monitoring while trading;
+- morning briefing and opening-book construction before the live clock begins;
+- full stress, factor, attribution and decision review after the live session.
 
 ![DealerSim continuous Global Macro Trader](docs/images/global-macro.png)
 
@@ -57,6 +58,8 @@ A continuous $100m synthetic long/short book with:
 - valuation, revisions, momentum, short interest, crowding and other pre-market research signals;
 - dealer RFQs, direct market execution, worked orders and auction execution;
 - alpha-versus-beta P&L attribution and thesis review.
+
+![DealerSim v3.6 long/short decision-time terminal](docs/images/equity-fund-v3.6.png)
 
 ### Long-Only Asset Management
 
@@ -97,9 +100,9 @@ For a block order, the engine can:
 4. compare dealer liquidity with the client's or fund's direct-market alternative;
 5. allow residual risk to be internalised, crossed immediately or worked over time.
 
-Liquidity changes through the simulated day and can deteriorate around events. Aggressive execution can consume depth, alter book imbalance, widen spreads and affect subsequent hedge costs. Deep instruments replenish faster than less-liquid names.
+Liquidity changes through the simulated day and can deteriorate around events. Aggressive execution can consume depth, alter book imbalance, widen spreads and affect subsequent hedge costs. Rapid same-direction child orders accumulate synthetic information leakage, so repeatedly clicking a minimum clip is not a free substitute for block execution. Deep instruments replenish faster than less-liquid names.
 
-Buy-side execution includes direct market trading, multi-dealer RFQs, partial/custom dealer fills, TWAP, liquidity-sensitive worked orders and equity auction routes.
+Buy-side execution is quantity-first: equities trade in shares, futures in contracts and FX in lots, with notional calculated automatically. Live terminals show an executable synthetic bid/offer before the user chooses direct market, multi-dealer RFQ, partial/custom dealer fills, TWAP, liquidity-sensitive worked orders or equity auction routes. Direct/worked/auction routes charge explicit synthetic commission; dealer-RFQ economics are embedded in the quoted spread rather than double-charged.
 
 ## Progress Centre
 
@@ -218,7 +221,7 @@ npm run calibrate
 
 ## Storage compatibility
 
-DealerSim v3.5.4 includes explicit local-storage schema versioning and a 60-second calibration-test timeout so the 384-session suite can complete on normal local hardware. If a browser contains progress/history from an incompatible older build, DealerSim safely resets the incompatible simulation history rather than allowing stale data to crash the application. User preferences are retained where possible, and the UI displays a one-time recovery notice.
+DealerSim v3.6.2 includes explicit local-storage schema versioning and a 60-second calibration-test timeout so the 384-session suite can complete on normal local hardware. If a browser contains progress/history from an incompatible older build, DealerSim safely resets the incompatible simulation history rather than allowing stale data to crash the application. User preferences are retained where possible, and the UI displays a one-time recovery notice.
 
 This was added after reproducing a blank-screen failure caused by legacy browser data on `localhost` while a clean origin loaded correctly.
 

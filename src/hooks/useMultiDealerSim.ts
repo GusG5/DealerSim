@@ -17,6 +17,7 @@ export interface MultiDealerSimController {
   submitQuote: (instrumentId: string, bid?: number, ask?: number) => void
   passRfq: (instrumentId: string) => void
   hedgeMarket: (instrumentId: string, side: TradeSide, sizeM: number) => void
+  hedgeInterdealer: (instrumentId: string, side: TradeSide, sizeM: number) => void
   startWorkingHedge: (
     instrumentId: string,
     side: TradeSide,
@@ -134,6 +135,7 @@ export function useMultiDealerSim(): MultiDealerSimController {
     submitQuote: (instrumentId, bid, ask) => route((engine) => engine.submitQuote(instrumentId, bid, ask)),
     passRfq: (instrumentId) => route((engine) => engine.passRfq(instrumentId)),
     hedgeMarket: (instrumentId, side, sizeM) => route((engine) => engine.hedgeMarket(instrumentId, side, sizeM)),
+    hedgeInterdealer: (instrumentId, side, sizeM) => route((engine) => engine.hedgeInterdealer(instrumentId, side, sizeM)),
     startWorkingHedge: (instrumentId, side, sizeM, strategy, clipSizeM, intervalSeconds) =>
       route((engine) => engine.startWorkingHedge(instrumentId, side, sizeM, strategy, clipSizeM, intervalSeconds)),
     cancelWorkingHedge: (instrumentId, orderId) => route((engine) => engine.cancelWorkingHedge(instrumentId, orderId)),

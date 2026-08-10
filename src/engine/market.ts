@@ -433,23 +433,27 @@ export function applyAggressiveExecutionImpact(
   const bookParticipation = Math.max(0, participation)
   const rapidRepeat = state.lastAggressiveSide === side && state.elapsed - state.lastAggressiveAt <= 12
   if (rapidRepeat) {
-    state.repetitiveFlowPressure = Math.min(2.5, state.repetitiveFlowPressure + (executionStrategy === 'liquidity-sensitive' ? 0.12 : 0.34) * profile.leakageSensitivity)
+    state.repetitiveFlowPressure = Math.min(3.2, state.repetitiveFlowPressure + (executionStrategy === 'liquidity-sensitive' ? 0.10 : executionStrategy === 'twap' ? 0.18 : 0.48) * profile.leakageSensitivity)
   } else {
     state.repetitiveFlowPressure *= 0.65
   }
-  const leakageMultiplier = 1 + state.repetitiveFlowPressure * 0.28
-  const strategyMultiplier = executionStrategy === 'liquidity-sensitive' ? 0.72 : executionStrategy === 'twap' ? 0.9 : 1
+  const leakageMultiplier = 1 + state.repetitiveFlowPressure * 0.42
+  const strategyMultiplier = executionStrategy === 'liquidity-sensitive' ? 0.62 : executionStrategy === 'twap' ? 0.78 : 1
   const adjustedImpact = Math.max(0, temporaryImpactPips) * leakageMultiplier * strategyMultiplier
   const immediateShare = instrument.id === 'sp500' || instrument.id === 'mega-equity' ? 0.26 : 0.38
   state.mid += direction * adjustedImpact * immediateShare * instrument.pipSize
   state.externalImpulsePips += direction * adjustedImpact * (1 - immediateShare)
 
-  const depletionAdd = Math.min(0.72, Math.sqrt(bookParticipation) * 0.3 * profile.cancellationSensitivity * strategyMultiplier)
-  state.executionLiquidityDepletion = Math.min(0.9, state.executionLiquidityDepletion + depletionAdd)
-  state.cancellationPressure = Math.min(0.92, state.cancellationPressure + Math.min(0.65, bookParticipation * 0.2 * profile.cancellationSensitivity))
+  const depletionAdd = Math.min(0.82, (Math.sqrt(bookParticipation) * 0.30 + Math.pow(Math.min(3, bookParticipation), 1.25) * 0.08) * profile.cancellationSensitivity * strategyMultiplier)
+  state.executionLiquidityDepletion = Math.min(0.94, state.executionLiquidityDepletion + depletionAdd)
+  state.cancellationPressure = Math.min(0.95, state.cancellationPressure + Math.min(0.74, Math.pow(bookParticipation, 0.9) * 0.24 * profile.cancellationSensitivity))
+  // Large aggressive fills should leave a visible footprint in the quoted
+  // market after execution.  The entered order size itself does not change L1,
+  // but once liquidity is consumed, spread pressure rises convexly with
+  // participation and then decays as the book replenishes.
   state.spreadPressurePips = Math.min(
-    18,
-    state.spreadPressurePips + adjustedImpact * profile.spreadElasticity * (0.32 + Math.min(1.2, bookParticipation) * 0.45),
+    24,
+    state.spreadPressurePips + adjustedImpact * profile.spreadElasticity * (0.48 + Math.min(1.5, bookParticipation) * 0.72),
   )
   const imbalanceShock = direction * Math.min(0.78, Math.sqrt(bookParticipation) * 0.32 * profile.imbalanceSensitivity)
   state.bookImbalance = Math.max(-0.85, Math.min(0.85, state.bookImbalance + imbalanceShock))
@@ -517,7 +521,7 @@ export function createOrderBook(
   )
   const spreadNoise = rng.range(0.92, 1.12)
   const rawSpreadPips =
-    state.baseSpreadPips * spreadNoise * (1 / Math.sqrt(effectiveLiquidity)) * Math.max(1, state.volatilityMultiplier * state.timeVolatilityMultiplier * 0.34) + state.spreadPressurePips
+    state.baseSpreadPips * 1.18 * spreadNoise * (1 / Math.sqrt(effectiveLiquidity)) * Math.max(1, state.volatilityMultiplier * state.timeVolatilityMultiplier * 0.34) + state.spreadPressurePips
   const spreadPips = instrument.marketStructure === 'central-limit-order-book'
     ? Math.max(1, Math.round(rawSpreadPips))
     : rawSpreadPips
@@ -534,7 +538,7 @@ export function createOrderBook(
     const depthCurve = instrument.assetClass === 'single-stock-equity'
       ? 2.1 + level * 0.72
       : 3.5 + level * 3.5
-    const sizeBase = depthCurve * effectiveLiquidity * instrument.depthScale * (instrument.defaultSizeM / 5)
+    const sizeBase = depthCurve * effectiveLiquidity * instrument.depthScale * (instrument.defaultSizeM / 5) * 0.84
     const imbalance = Math.max(-0.8, Math.min(0.8, state.bookImbalance))
     const cancellationNoise = 1 - Math.min(0.7, state.cancellationPressure * rng.range(0.45, 0.9))
     const bidSizeM = Math.max(instrument.minimumSizeM, sizeBase * rng.range(0.72, 1.32) * cancellationNoise * (1 + imbalance * 0.48))

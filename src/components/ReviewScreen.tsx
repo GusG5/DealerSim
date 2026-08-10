@@ -80,6 +80,7 @@ export function ReviewScreen({
       ['internalisation_rate', internalisationRate],
       ['estimated_market_impact_avoided', impactAvoidedEstimate],
       ['exchange_hedge_volume', metrics.exchangeHedgeVolumeM],
+      ['interdealer_hedge_volume', metrics.interdealerHedgeVolumeM],
       ['worked_hedge_volume', metrics.workedHedgeVolumeM],
       ['market_impact_cost', metrics.marketImpactCost],
       ['exchange_slippage_cost', metrics.exchangeSlippageCost],
@@ -115,6 +116,7 @@ export function ReviewScreen({
       '',
       '## Execution',
       `- Exchange hedge volume: ${formatInstrumentSize(metrics.exchangeHedgeVolumeM, snapshot.options.instrument)}`,
+      `- Interdealer hedge volume: ${formatInstrumentSize(metrics.interdealerHedgeVolumeM, snapshot.options.instrument)}`,
       `- Worked hedge volume: ${formatInstrumentSize(metrics.workedHedgeVolumeM, snapshot.options.instrument)}`,
       `- Market impact cost: ${formatInstrumentMoney(metrics.marketImpactCost, snapshot.options.instrument)}`,
       `- Estimated impact avoided through matching: ${formatInstrumentMoney(impactAvoidedEstimate, snapshot.options.instrument)}`,
@@ -183,6 +185,7 @@ export function ReviewScreen({
         <Metric label="Internalisation rate" value={formatPercent(internalisationRate)} tone={internalisationRate > 0.35 ? 'positive' : ''} />
         <Metric label="Worked hedge volume" value={formatInstrumentSize(metrics.workedHedgeVolumeM, snapshot.options.instrument)} />
         <Metric label="Exchange hedge volume" value={formatInstrumentSize(metrics.exchangeHedgeVolumeM, snapshot.options.instrument)} />
+        <Metric label="Interdealer hedge volume" value={formatInstrumentSize(metrics.interdealerHedgeVolumeM, snapshot.options.instrument)} />
         <Metric label="Market impact cost" value={formatInstrumentMoney(metrics.marketImpactCost, snapshot.options.instrument)} tone="negative" />
         <Metric label="Impact avoided via matching" value={formatInstrumentMoney(impactAvoidedEstimate, snapshot.options.instrument)} tone="positive" />
       </section>

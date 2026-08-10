@@ -129,6 +129,11 @@ export class MultiDealerSimEngine {
     return this.getSnapshot()
   }
 
+  hedgeInterdealer(instrumentId: string, side: TradeSide, sizeM: number): MultiSessionSnapshot {
+    this.findEngine(instrumentId).hedgeInterdealer(side, sizeM)
+    return this.getSnapshot()
+  }
+
   startWorkingHedge(
     instrumentId: string,
     side: TradeSide,

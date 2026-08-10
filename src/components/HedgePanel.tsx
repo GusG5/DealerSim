@@ -19,6 +19,7 @@ import {
 interface HedgePanelProps {
   snapshot: SessionSnapshot
   onMarketHedge: (side: TradeSide, sizeM: number) => void
+  onInterdealerHedge: (side: TradeSide, sizeM: number) => void
   onStartWorkingHedge: (
     side: TradeSide,
     sizeM: number,
@@ -38,6 +39,7 @@ interface HedgePanelProps {
 export function HedgePanel({
   snapshot,
   onMarketHedge,
+  onInterdealerHedge,
   onStartWorkingHedge,
   onCancelWorkingHedge,
   onPauseWorkingHedge,
@@ -151,8 +153,8 @@ export function HedgePanel({
           <strong>{(internalisationRate * 100).toFixed(0)}%</strong>
         </div>
         <div>
-          <span>Exchange hedge</span>
-          <strong>{formatInstrumentSize(snapshot.metrics.exchangeHedgeVolumeM, instrument)}</strong>
+          <span>Exchange / interdealer</span>
+          <strong>{formatInstrumentSize(snapshot.metrics.exchangeHedgeVolumeM, instrument)} / {formatInstrumentSize(snapshot.metrics.interdealerHedgeVolumeM, instrument)}</strong>
         </div>
       </div>
 
@@ -177,6 +179,26 @@ export function HedgePanel({
           Load residual {position ? formatInstrumentSize(Math.abs(position), instrument) : ''}
         </button>
       </div>
+
+      {executionEstimates && executableSpreadPips !== undefined && (
+        <div className="size-adjusted-executable-quote">
+          <div className="executable-sell">
+            <span>SELL {formatInstrumentSize(numericSize, instrument)}</span>
+            <strong>{formatPrice(executionEstimates.sell.directVwap, instrument.priceDecimals)}</strong>
+            <small>{executionEstimates.sell.levelsConsumed} level{executionEstimates.sell.levelsConsumed === 1 ? '' : 's'} swept</small>
+          </div>
+          <div className="executable-top">
+            <span>TOP MARKET</span>
+            <strong>{formatPrice(snapshot.market.bid, instrument.priceDecimals)} / {formatPrice(snapshot.market.ask, instrument.priceDecimals)}</strong>
+            <small>{snapshot.market.spreadPips.toFixed(1)} {quoteUnitLabel(instrument)}</small>
+          </div>
+          <div className="executable-buy">
+            <span>BUY {formatInstrumentSize(numericSize, instrument)}</span>
+            <strong>{formatPrice(executionEstimates.buy.directVwap, instrument.priceDecimals)}</strong>
+            <small>{executionEstimates.buy.levelsConsumed} level{executionEstimates.buy.levelsConsumed === 1 ? '' : 's'} swept</small>
+          </div>
+        </div>
+      )}
 
       {executionEstimates && executableSpreadPips !== undefined && (
         <div className="size-adjusted-market-strip">
@@ -252,6 +274,15 @@ export function HedgePanel({
         >
           <strong>Hedge 50% now</strong>
           <span>Reduce exposure, leave room for matching flow</span>
+        </button>
+        <button
+          type="button"
+          className="execution-choice interdealer"
+          disabled={position === 0}
+          onClick={() => onInterdealerHedge(flattenSide, Math.abs(position))}
+        >
+          <strong>Interdealer block</strong>
+          <span>Deeper block liquidity, limited capacity and variable quote quality</span>
         </button>
         <button
           type="button"

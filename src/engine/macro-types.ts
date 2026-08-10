@@ -26,6 +26,12 @@ export interface MacroAssetConfig {
   priceDecimals: number
   annualVolatility: number
   transactionCostBps: number
+  unitLabel: string
+  unitPlural: string
+  contractMultiplier: number
+  commissionPerUnit: number
+  minimumCommission: number
+  quantityStep: number
   maxAbsWeight: number
   description: string
   factorLoadings: Record<PortfolioFactor, number>
@@ -137,6 +143,8 @@ export interface MacroTrade {
   targetWeight: number
   tradedNotional: number
   transactionCost: number
+  commission: number
+  marketCost: number
   thesisId: string
   executionVenue: MacroExecutionVenue
   benchmarkPrice: number
@@ -210,6 +218,7 @@ export interface MacroSessionSnapshot {
   peakConcentration: number
   turnover: number
   transactionCosts: number
+  commissions: number
   activeDealerRfq?: MacroDealerRfq
   dealerRfqs: MacroDealerRfq[]
   dealerTrades: number
@@ -233,6 +242,7 @@ export interface MacroSessionSummary {
   turnover: number
   grossExposure: number
   transactionCosts: number
+  commissions?: number
   dealerTrades?: number
   dealerSavings?: number
   returnScore?: number

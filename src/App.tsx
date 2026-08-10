@@ -254,6 +254,7 @@ export default function App() {
       turnover: macroSnapshot.turnover,
       grossExposure: macroSnapshot.peakGrossExposure,
       transactionCosts: macroSnapshot.transactionCosts,
+      commissions: macroSnapshot.commissions,
       dealerTrades: macroSnapshot.dealerTrades,
       dealerSavings: macroSnapshot.dealerSavings,
       returnScore: macroSnapshot.score.return,
@@ -288,6 +289,7 @@ export default function App() {
       turnover: liveMacroSnapshot.turnover,
       grossExposure: liveMacroSnapshot.peakGrossExposure,
       transactionCosts: liveMacroSnapshot.transactionCosts,
+      commissions: liveMacroSnapshot.commissions,
       dealerTrades: liveMacroSnapshot.dealerTrades,
       dealerSavings: liveMacroSnapshot.dealerSavings,
       returnScore: liveMacroSnapshot.score.return,
@@ -324,6 +326,7 @@ export default function App() {
       peakGrossExposure: fundSnapshot.peakGrossExposure,
       peakBetaExposure: fundSnapshot.peakBetaExposure,
       transactionCosts: fundSnapshot.transactionCosts,
+      commissions: fundSnapshot.commissions,
       borrowCosts: fundSnapshot.borrowCosts,
       dealerTrades: fundSnapshot.dealerTrades,
       dealerSavings: fundSnapshot.dealerSavings,
@@ -498,6 +501,7 @@ export default function App() {
           onSubmitQuote={controller.submitQuote}
           onPassRfq={controller.passRfq}
           onMarketHedge={controller.hedgeMarket}
+          onInterdealerHedge={controller.hedgeInterdealer}
           onStartWorkingHedge={controller.startWorkingHedge}
           onCancelWorkingHedge={controller.cancelWorkingHedge}
           onPauseWorkingHedge={controller.pauseWorkingHedge}
@@ -520,6 +524,7 @@ export default function App() {
           onSubmitQuote={multiController.submitQuote}
           onPassRfq={multiController.passRfq}
           onMarketHedge={multiController.hedgeMarket}
+          onInterdealerHedge={multiController.hedgeInterdealer}
           onStartWorkingHedge={multiController.startWorkingHedge}
           onCancelWorkingHedge={multiController.cancelWorkingHedge}
           onPauseWorkingHedge={multiController.pauseWorkingHedge}

@@ -83,6 +83,7 @@ export function MultiReviewScreen({ snapshot, onReplay, onNewSession, onOpenMeth
                 <div><span>Commission</span><strong>{formatInstrumentMoney(leg.position.grossCommission, instrument)}</strong></div>
                 <div><span>Max inventory</span><strong>{formatInstrumentSize(leg.metrics.maximumInventoryM, instrument)}</strong></div>
                 <div><span>Internalised</span><strong>{formatInstrumentSize(leg.metrics.internalisedVolumeM, instrument)}</strong></div>
+                <div><span>Interdealer</span><strong>{formatInstrumentSize(leg.metrics.interdealerHedgeVolumeM, instrument)}</strong></div>
                 <div><span>RFQs</span><strong>{leg.metrics.rfqsReceived}</strong></div>
                 <div><span>Expired</span><strong>{leg.metrics.rfqsExpired}</strong></div>
               </div>

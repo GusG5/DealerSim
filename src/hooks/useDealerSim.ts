@@ -12,6 +12,7 @@ export interface DealerSimController {
   submitQuote: (bid?: number, ask?: number) => void
   passRfq: () => void
   hedgeMarket: (side: TradeSide, sizeM: number) => void
+  hedgeInterdealer: (side: TradeSide, sizeM: number) => void
   startWorkingHedge: (side: TradeSide, sizeM: number, strategy: WorkingHedgeStrategy, clipSizeM: number, intervalSeconds: number) => void
   cancelWorkingHedge: (orderId: string) => void
   pauseWorkingHedge: (orderId: string) => void
@@ -126,6 +127,12 @@ export function useDealerSim(): DealerSimController {
     setSnapshot(engine.hedgeMarket(side, sizeM))
   }, [])
 
+  const hedgeInterdealer = useCallback((side: TradeSide, sizeM: number) => {
+    const engine = engineRef.current
+    if (!engine) return
+    setSnapshot(engine.hedgeInterdealer(side, sizeM))
+  }, [])
+
   const startWorkingHedge = useCallback((
     side: TradeSide,
     sizeM: number,
@@ -183,6 +190,7 @@ export function useDealerSim(): DealerSimController {
     submitQuote,
     passRfq,
     hedgeMarket,
+    hedgeInterdealer,
     startWorkingHedge,
     cancelWorkingHedge,
     pauseWorkingHedge,

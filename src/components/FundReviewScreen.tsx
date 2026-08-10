@@ -44,7 +44,9 @@ export function FundReviewScreen({ snapshot, priorAttempts, onReplay, onNewSessi
       `- Peak gross exposure: ${formatPercent(snapshot.peakGrossExposure)}`,
       `- Peak beta exposure: ${snapshot.peakBetaExposure.toFixed(2)}`,
       `- Implementation shortfall: ${q.totalNotional ? `${q.implementationShortfallBps.toFixed(1)}bp` : 'n/a'}`,
-      `- Trading + borrow costs: ${formatMoney(snapshot.transactionCosts + snapshot.borrowCosts)}`,
+      `- Trading costs (incl. commissions): ${formatMoney(snapshot.transactionCosts)}`,
+      `- Explicit commissions: ${formatMoney(snapshot.commissions)}`,
+      `- Borrow costs: ${formatMoney(snapshot.borrowCosts)}`,
       `- Dealer savings vs direct: ${formatMoney(snapshot.dealerSavings)}`,
       '',
       '## Skill scorecard',
@@ -73,7 +75,8 @@ export function FundReviewScreen({ snapshot, priorAttempts, onReplay, onNewSessi
       <article><span>Max drawdown</span><strong>{formatPercent(Math.abs(snapshot.maxDrawdown), 2)}</strong></article>
       <article><span>Peak gross</span><strong>{formatPercent(snapshot.peakGrossExposure)}</strong></article>
       <article><span>Implementation shortfall</span><strong className={q.implementationShortfallBps <= 0 ? 'positive' : q.implementationShortfallBps > 6 ? 'negative' : ''}>{q.totalNotional ? `${q.implementationShortfallBps.toFixed(1)}bp` : '—'}</strong></article>
-      <article><span>Trading + borrow</span><strong>{formatMoney(snapshot.transactionCosts + snapshot.borrowCosts)}</strong></article>
+      <article><span>Trading costs</span><strong>{formatMoney(snapshot.transactionCosts)}</strong><small>{formatMoney(snapshot.commissions)} commissions</small></article>
+      <article><span>Borrow costs</span><strong>{formatMoney(snapshot.borrowCosts)}</strong></article>
       <article><span>Dealer savings</span><strong className={snapshot.dealerSavings >= 0 ? 'positive' : 'negative'}>{formatMoney(snapshot.dealerSavings)}</strong></article>
     </section>
 
